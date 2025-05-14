@@ -26,7 +26,12 @@
                                 (posX) * PI3_BYTES_PER_PIXEL))
 
 // ALPHA PATCH: Helper to always set alpha to 0xFF
-static inline void FillAlpha(EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Pixel) {
+STATIC
+VOID
+FillAlpha (
+  IN OUT EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Pixel
+  )
+{
   Pixel->Reserved = 0xFF;
 }
 
