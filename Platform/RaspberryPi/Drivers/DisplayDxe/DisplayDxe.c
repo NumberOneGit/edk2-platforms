@@ -348,13 +348,17 @@ DisplayBlt (
 
     for (i = 0; i < Height; i++) {
       EFI_GRAPHICS_OUTPUT_BLT_PIXEL *PixelRow = (EFI_GRAPHICS_OUTPUT_BLT_PIXEL *)
-      ((UINTN)BltBuffer + (SourceY + i) * Delta + SourceX * PI3_BYTES_PER_PIXEL);
+        ((UINTN)BltBuffer + (SourceY + i) * Delta + SourceX * PI3_BYTES_PER_PIXEL);
 
-    for (UINTN x = 0; x < Width; x++) {
-      if (PixelRow[x].Reserved != 0xFF) {
-        PixelRow[x].Reserved = 0xFF;
+      // Premultiply RGB by alpha, then force alpha to 0xFF for all pixels
+      for (UINTN x = 0; x < Width; x++) {
+        UINT8 a = PixelRow[x].Reserved;
+        PixelRow[x].Red   = (PixelRow[x].Red   * a) / 255;
+        PixelRow[x].Green = (PixelRow[x].Green * a) / 255;
+        PixelRow[x].Blue  = (PixelRow[x].Blue  * a) / 255;
+        PixelRow[x].Reserved = 0xFF; // Force alpha to fully opaque
       }
-    } 
+    }
       VidBuf = POS_TO_FB (DestinationX, DestinationY + i);
       BltBuf = (UINT8*)((UINTN)BltBuffer + (SourceY + i) * Delta +
         SourceX * PI3_BYTES_PER_PIXEL);
@@ -362,7 +366,7 @@ DisplayBlt (
       gBS->CopyMem ((VOID*)VidBuf, (VOID*)BltBuf, Width * PI3_BYTES_PER_PIXEL);
     }
     break;
-
+    
   case EfiBltVideoToVideo:
     for (i = 0; i < Height; i++) {
       VidBuf = POS_TO_FB (SourceX, SourceY + i);
