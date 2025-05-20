@@ -7,7 +7,7 @@
  **/
 
 #include <Uefi.h>
-#include <Library/BoardRevisionHelperLib.h>
+#include <BoardRevisionHelperLib.h>
 
 //
 // https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#new-style-revision-codes
@@ -165,4 +165,20 @@ BoardRevisionGetProcessorName (
     }
   }
   return "Unknown CPU Model";
+}
+
+UINT32
+EFIAPI
+BoardRevisionGetSoCStepping (
+    IN UINT32 RevisionCode
+    )
+{
+    UINT32 model = (RevisionCode >> 4) & 0xFF;
+    UINT32 boardRev = RevisionCode & 0xF;
+
+    if (model == 0x17 && boardRev == 0) {
+        return BCM2712_C1;
+    } else {
+        return BCM2712_D0;
+    }
 }
