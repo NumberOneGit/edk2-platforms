@@ -57,7 +57,7 @@ GpioGetRiserId (
   RevId = 0;
   DynamicSiLibraryPpi = NULL;
 
-  DEBUG((EFI_D_INFO, "%a Entry...\n", __FUNCTION__));
+  DEBUG((EFI_D_INFO, "%a Entry...\n", __func__));
 
   Status = PeiServicesLocatePpi (&gDynamicSiLibraryPpiGuid, 0, NULL, (VOID **) &DynamicSiLibraryPpi);
   if (EFI_ERROR (Status)) {

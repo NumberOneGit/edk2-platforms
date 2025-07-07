@@ -370,7 +370,7 @@ DecompressMemFvs (
   DEBUG ((EFI_D_VERBOSE, "PcdSimicsDecompressionScratchEnd: 0x%x\n", PcdGet32 (PcdSimicsDecompressionScratchEnd)));
 
   DEBUG ((EFI_D_VERBOSE, "%a: OutputBuffer@%p+0x%x ScratchBuffer@%p+0x%x "
-    "PcdSimicsDecompressionScratchEnd=0x%x\n", __FUNCTION__, OutputBuffer,
+    "PcdSimicsDecompressionScratchEnd=0x%x\n", __func__, OutputBuffer,
     OutputBufferSize, ScratchBuffer, ScratchBufferSize,
     PcdGet32 (PcdSimicsDecompressionScratchEnd)));
   ASSERT ((UINTN)ScratchBuffer + ScratchBufferSize ==

@@ -368,7 +368,7 @@ AcpiNVDataUpdate (
                   &PrivateData->Configuration
                   );
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a %d gRT->SetVariable() failed \n", __FUNCTION__, __LINE__));
+    DEBUG ((DEBUG_ERROR, "%a %d gRT->SetVariable() failed \n", __func__, __LINE__));
     return Status;
   }
 
@@ -405,7 +405,7 @@ UpdateTurboModeConfig (
       }
     }
   } else {
-    DEBUG ((DEBUG_INFO, "%a: Turbo mode is unsupported! \n", __FUNCTION__));
+    DEBUG ((DEBUG_INFO, "%a: Turbo mode is unsupported! \n", __func__));
   }
 
   return EFI_SUCCESS;

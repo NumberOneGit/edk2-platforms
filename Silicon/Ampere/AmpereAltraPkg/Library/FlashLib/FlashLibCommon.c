@@ -87,7 +87,7 @@ FlashGetFailSafeInfo (
     DEBUG ((
       DEBUG_INFO,
       "%a: FailSafe Base 0x%llx, Size 0x%lx\n",
-      __FUNCTION__,
+      __func__,
       *FailSafeBase,
       *FailSafeSize
       ));
@@ -139,7 +139,7 @@ FlashGetNvRamInfo (
     DEBUG ((
       DEBUG_INFO,
       "%a: NVRAM Base 0x%llx, Size 0x%lx\n",
-      __FUNCTION__,
+      __func__,
       *NvRamBase,
       *NvRamSize
       ));
@@ -191,7 +191,7 @@ FlashGetNvRam2Info (
     DEBUG ((
       DEBUG_INFO,
       "%a: NVRAM2 Base 0x%llx, Size 0x%lx\n",
-      __FUNCTION__,
+      __func__,
       *NvRam2Base,
       *NvRam2Size
       ));
@@ -240,7 +240,7 @@ FlashEraseCommand (
   }
 
   if (MmSpiNorRes.Status != MM_SPINOR_RES_SUCCESS) {
-    DEBUG ((DEBUG_ERROR, "%a: Device error %llx\n", __FUNCTION__, MmSpiNorRes.Status));
+    DEBUG ((DEBUG_ERROR, "%a: Device error %llx\n", __func__, MmSpiNorRes.Status));
     return EFI_DEVICE_ERROR;
   }
 
@@ -296,7 +296,7 @@ FlashWriteCommand (
     }
 
     if (MmSpiNorRes.Status != MM_SPINOR_RES_SUCCESS) {
-      DEBUG ((DEBUG_ERROR, "%a: Device error 0x%llx\n", __FUNCTION__, MmSpiNorRes.Status));
+      DEBUG ((DEBUG_ERROR, "%a: Device error 0x%llx\n", __func__, MmSpiNorRes.Status));
       return EFI_DEVICE_ERROR;
     }
 
@@ -356,7 +356,7 @@ FlashReadCommand (
     }
 
     if (MmSpiNorRes.Status != MM_SPINOR_RES_SUCCESS) {
-      DEBUG ((DEBUG_ERROR, "%a: Device error %llx\n", __FUNCTION__, MmSpiNorRes.Status));
+      DEBUG ((DEBUG_ERROR, "%a: Device error %llx\n", __func__, MmSpiNorRes.Status));
       return EFI_DEVICE_ERROR;
     }
 

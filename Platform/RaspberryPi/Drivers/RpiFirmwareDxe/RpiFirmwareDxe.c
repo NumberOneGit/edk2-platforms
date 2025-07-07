@@ -110,7 +110,7 @@ MailboxTransaction (
   //
   if (!DrainMailbox ()) {
     DEBUG ((DEBUG_ERROR, "%a: timeout waiting for mailbox to drain\n",
-      __FUNCTION__));
+      __func__));
     return EFI_TIMEOUT;
   }
 
@@ -119,7 +119,7 @@ MailboxTransaction (
   //
   if (!MailboxWaitForStatusCleared (1U << BCM2836_MBOX_STATUS_FULL)) {
     DEBUG ((DEBUG_ERROR, "%a: timeout waiting for outbox to become empty\n",
-      __FUNCTION__));
+      __func__));
     return EFI_TIMEOUT;
   }
 
@@ -146,7 +146,7 @@ MailboxTransaction (
   //
   if (!MailboxWaitForStatusCleared (1U << BCM2836_MBOX_STATUS_EMPTY)) {
     DEBUG ((DEBUG_ERROR, "%a: timeout waiting for inbox to become full\n",
-      __FUNCTION__));
+      __func__));
     return EFI_TIMEOUT;
   }
 
@@ -203,7 +203,7 @@ RpiFirmwareSetPowerState (
   UINT32                      Result;
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -227,14 +227,14 @@ RpiFirmwareSetPowerState (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
     Status = EFI_DEVICE_ERROR;
   }
 
   if (!EFI_ERROR (Status) &&
       PowerState ^ (Cmd->TagBody.PowerState & RPI_MBOX_POWER_STATE_ENABLE)) {
     DEBUG ((DEBUG_ERROR, "%a: failed to %sable power for device %d\n",
-      __FUNCTION__, PowerState ? "en" : "dis", DeviceId));
+      __func__, PowerState ? "en" : "dis", DeviceId));
     Status = EFI_DEVICE_ERROR;
   }
   ReleaseSpinLock (&mMailboxLock);
@@ -269,7 +269,7 @@ RpiFirmwareGetArmMemory (
   UINT32                      Result;
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -290,7 +290,7 @@ RpiFirmwareGetArmMemory (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
     ReleaseSpinLock (&mMailboxLock);
     return EFI_DEVICE_ERROR;
   }
@@ -328,7 +328,7 @@ RpiFirmwareGetMacAddress (
   UINT32                      Result;
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -348,7 +348,7 @@ RpiFirmwareGetMacAddress (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
     ReleaseSpinLock (&mMailboxLock);
     return EFI_DEVICE_ERROR;
   }
@@ -384,7 +384,7 @@ RpiFirmwareGetSerial (
   UINT32                      Result;
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -404,7 +404,7 @@ RpiFirmwareGetSerial (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
     ReleaseSpinLock (&mMailboxLock);
     return EFI_DEVICE_ERROR;
   }
@@ -447,7 +447,7 @@ RpiFirmwareGetModel (
   UINT32                      Result;
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -467,7 +467,7 @@ RpiFirmwareGetModel (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
     ReleaseSpinLock (&mMailboxLock);
     return EFI_DEVICE_ERROR;
   }
@@ -503,7 +503,7 @@ RpiFirmwareGetModelRevision (
   UINT32                        Result;
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -523,7 +523,7 @@ RpiFirmwareGetModelRevision (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
     ReleaseSpinLock (&mMailboxLock);
     return EFI_DEVICE_ERROR;
   }
@@ -546,7 +546,7 @@ RpiFirmwareGetFirmwareRevision (
   UINT32                        Result;
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -566,7 +566,7 @@ RpiFirmwareGetFirmwareRevision (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
     ReleaseSpinLock (&mMailboxLock);
     return EFI_DEVICE_ERROR;
   }
@@ -638,7 +638,7 @@ RpiFirmwareGetFbSize (
   UINT32                      Result;
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -658,7 +658,7 @@ RpiFirmwareGetFbSize (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox  transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
     ReleaseSpinLock (&mMailboxLock);
     return EFI_DEVICE_ERROR;
   }
@@ -680,7 +680,7 @@ RpiFirmwareFreeFb (VOID)
   UINT32             Result;
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -701,7 +701,7 @@ RpiFirmwareFreeFb (VOID)
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
     ReleaseSpinLock (&mMailboxLock);
     return EFI_DEVICE_ERROR;
   }
@@ -731,7 +731,7 @@ RpiFirmwareAllocFb (
   ASSERT (FbBase != NULL);
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -765,7 +765,7 @@ RpiFirmwareAllocFb (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
     ReleaseSpinLock (&mMailboxLock);
     return EFI_DEVICE_ERROR;
   }
@@ -800,18 +800,18 @@ RpiFirmwareGetCommmandLine (
 
   if ((BufferSize % sizeof (UINT32)) != 0) {
     DEBUG ((DEBUG_ERROR, "%a: BufferSize must be a multiple of 4\n",
-      __FUNCTION__));
+      __func__));
     return EFI_INVALID_PARAMETER;
   }
 
   if (sizeof (*Cmd) + BufferSize > EFI_PAGES_TO_SIZE (NUM_PAGES)) {
     DEBUG ((DEBUG_ERROR, "%a: BufferSize exceeds size of DMA buffer\n",
-      __FUNCTION__));
+      __func__));
     return EFI_OUT_OF_RESOURCES;
   }
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -830,7 +830,7 @@ RpiFirmwareGetCommmandLine (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
     ReleaseSpinLock (&mMailboxLock);
     return EFI_DEVICE_ERROR;
   }
@@ -838,7 +838,7 @@ RpiFirmwareGetCommmandLine (
   Cmd->TagHead.TagValueSize &= ~RPI_MBOX_VALUE_SIZE_RESPONSE_MASK;
   if (Cmd->TagHead.TagValueSize >= BufferSize &&
       Cmd->CommandLine[Cmd->TagHead.TagValueSize - 1] != '\0') {
-    DEBUG ((DEBUG_ERROR, "%a: insufficient buffer size\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: insufficient buffer size\n", __func__));
     ReleaseSpinLock (&mMailboxLock);
     return EFI_OUT_OF_RESOURCES;
   }
@@ -886,7 +886,7 @@ RpiFirmwareSetClockRate (
   UINT32                      Result;
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -903,14 +903,14 @@ RpiFirmwareSetClockRate (
   Cmd->TagBody.SkipTurbo      = SkipTurbo ? 1 : 0;
   Cmd->EndTag                 = 0;
 
-  DEBUG ((DEBUG_INFO, "%a: Request clock rate %X = %d\n", __FUNCTION__, ClockId, ClockRate));
+  DEBUG ((DEBUG_INFO, "%a: Request clock rate %X = %d\n", __func__, ClockId, ClockRate));
   Status = MailboxTransaction (Cmd->BufferHead.BufferSize, RPI_MBOX_VC_CHANNEL, &Result);
 
   if (EFI_ERROR (Status) ||
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
     ReleaseSpinLock (&mMailboxLock);
     return EFI_DEVICE_ERROR;
   }
@@ -947,7 +947,7 @@ RpiFirmwareGetClockRate (
   UINT32                      Result;
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -968,7 +968,7 @@ RpiFirmwareGetClockRate (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
     ReleaseSpinLock (&mMailboxLock);
     return EFI_DEVICE_ERROR;
   }
@@ -976,7 +976,7 @@ RpiFirmwareGetClockRate (
   *ClockRate = Cmd->TagBody.ClockRate;
   ReleaseSpinLock (&mMailboxLock);
 
-  DEBUG ((DEBUG_INFO, "%a: Get Clock Rate return: ClockRate=%d ClockId=%X\n", __FUNCTION__, *ClockRate, ClockId));
+  DEBUG ((DEBUG_INFO, "%a: Get Clock Rate return: ClockRate=%d ClockId=%X\n", __func__, *ClockRate, ClockId));
 
   return EFI_SUCCESS;
 }
@@ -1051,7 +1051,7 @@ RpiFirmwareSetClockState (
   UINT32                      Result;
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -1073,7 +1073,7 @@ RpiFirmwareSetClockState (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
     ReleaseSpinLock (&mMailboxLock);
     return EFI_DEVICE_ERROR;
   }
@@ -1110,7 +1110,7 @@ RpiFirmwareSetGpio (
   UINT32              Result;
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return;
   }
 
@@ -1135,7 +1135,7 @@ RpiFirmwareSetGpio (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox  transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
   }
   ReleaseSpinLock (&mMailboxLock);
 }
@@ -1177,7 +1177,7 @@ RpiFirmwareNotifyXhciReset (
   UINT32                       Result;
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -1198,7 +1198,7 @@ RpiFirmwareNotifyXhciReset (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox  transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
   }
 
   ReleaseSpinLock (&mMailboxLock);
@@ -1237,7 +1237,7 @@ RpiFirmwareNotifyGpioGetCfg (
   UINT32                       Result;
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -1261,7 +1261,7 @@ RpiFirmwareNotifyGpioGetCfg (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox  transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
   }
 
   ReleaseSpinLock (&mMailboxLock);
@@ -1304,13 +1304,13 @@ RpiFirmwareNotifyGpioSetCfg (
 
   Status = RpiFirmwareNotifyGpioGetCfg (Gpio, &Result);
   if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "%a: Failed to get GPIO polarity\n", __FUNCTION__));
+      DEBUG ((DEBUG_ERROR, "%a: Failed to get GPIO polarity\n", __func__));
       Result = 0; //default polarity
   }
 
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -1338,7 +1338,7 @@ RpiFirmwareNotifyGpioSetCfg (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox  transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
   }
 
   ReleaseSpinLock (&mMailboxLock);
@@ -1377,7 +1377,7 @@ RpiFirmwareGetRtc (
   UINT32                       Result;
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -1399,7 +1399,7 @@ RpiFirmwareGetRtc (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox  transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
     Status = EFI_DEVICE_ERROR;
   } else {
     *Value = Cmd->TagBody.Value;
@@ -1423,7 +1423,7 @@ RpiFirmwareSetRtc (
   UINT32                       Result;
 
   if (!AcquireSpinLockOrFail (&mMailboxLock)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __func__));
     return EFI_DEVICE_ERROR;
   }
 
@@ -1445,7 +1445,7 @@ RpiFirmwareSetRtc (
       Cmd->BufferHead.Response != RPI_MBOX_RESP_SUCCESS) {
     DEBUG ((DEBUG_ERROR,
       "%a: mailbox  transaction error: Status == %r, Response == 0x%x\n",
-      __FUNCTION__, Status, Cmd->BufferHead.Response));
+      __func__, Status, Cmd->BufferHead.Response));
     Status = EFI_DEVICE_ERROR;
   }
 
@@ -1525,7 +1525,7 @@ RpiFirmwareDxeInitialize (
 
   Status = DmaAllocateBuffer (EfiRuntimeServicesData, NUM_PAGES, &mDmaBuffer);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to allocate DMA buffer (Status == %r)\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to allocate DMA buffer (Status == %r)\n", __func__));
     return Status;
   }
 
@@ -1533,7 +1533,7 @@ RpiFirmwareDxeInitialize (
   Status = DmaMap (MapOperationBusMasterCommonBuffer, mDmaBuffer, &mDmaBufferSize,
              &mDmaBufferBusAddress, &mDmaBufferMapping);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to map DMA buffer (Status == %r)\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to map DMA buffer (Status == %r)\n", __func__));
     goto FreeBuffer;
   }
 
@@ -1549,7 +1549,7 @@ RpiFirmwareDxeInitialize (
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR,
       "%a: failed to install RPI firmware protocol (Status == %r)\n",
-      __FUNCTION__, Status));
+      __func__, Status));
     goto UnmapBuffer;
   }
 
@@ -1562,7 +1562,7 @@ RpiFirmwareDxeInitialize (
                   EFI_MEMORY_UC | EFI_MEMORY_RUNTIME);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: AddMemorySpace failed. Status=%r\n",
-            __FUNCTION__, Status));
+            __func__, Status));
     goto UnmapBuffer;
   }
 
@@ -1572,7 +1572,7 @@ RpiFirmwareDxeInitialize (
                   EFI_MEMORY_UC | EFI_MEMORY_RUNTIME);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: SetMemorySpaceAttributes failed. Status=%r\n",
-            __FUNCTION__, Status));
+            __func__, Status));
     goto UnmapBuffer;
   }
 

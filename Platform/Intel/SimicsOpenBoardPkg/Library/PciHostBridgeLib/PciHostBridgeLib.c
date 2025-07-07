@@ -151,7 +151,7 @@ InitRootBridge (
   DevicePath = AllocateCopyPool (sizeof mRootBridgeDevicePathTemplate,
                  &mRootBridgeDevicePathTemplate);
   if (DevicePath == NULL) {
-    DEBUG ((EFI_D_ERROR, "%a: %r\n", __FUNCTION__, EFI_OUT_OF_RESOURCES));
+    DEBUG ((EFI_D_ERROR, "%a: %r\n", __func__, EFI_OUT_OF_RESOURCES));
     return EFI_OUT_OF_RESOURCES;
   }
   DevicePath->AcpiDevicePath.UID = RootBusNumber;
@@ -159,7 +159,7 @@ InitRootBridge (
 
   DEBUG ((EFI_D_INFO,
     "%a: populated root bus %d, with room for %d subordinate bus(es)\n",
-    __FUNCTION__, RootBusNumber, MaxSubBusNumber - RootBusNumber));
+    __func__, RootBusNumber, MaxSubBusNumber - RootBusNumber));
   return EFI_SUCCESS;
 }
 
@@ -243,7 +243,7 @@ PciHostBridgeGetRootBridges (
   //
   Bridges = AllocatePool ((1 + (UINTN)ExtraRootBridges) * sizeof *Bridges);
   if (Bridges == NULL) {
-    DEBUG ((EFI_D_ERROR, "%a: %r\n", __FUNCTION__, EFI_OUT_OF_RESOURCES));
+    DEBUG ((EFI_D_ERROR, "%a: %r\n", __func__, EFI_OUT_OF_RESOURCES));
     return NULL;
   }
   Initialized = 0;

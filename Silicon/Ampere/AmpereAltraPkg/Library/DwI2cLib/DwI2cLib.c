@@ -178,7 +178,7 @@ I2cHWInit (
   mI2cBusList[Bus].Enabled = 0;
 
   DEBUG ((DEBUG_VERBOSE, "%a: Bus %d, Rx_Buffer %d, Tx_Buffer %d\n",
-    __FUNCTION__,
+    __func__,
     Bus,
     mI2cBusList[Bus].RxFifo,
     mI2cBusList[Bus].TxFifo
@@ -211,7 +211,7 @@ I2cEnable (
   } while (I2cStatusCnt-- != 0);
 
   if (I2cStatusCnt == 0) {
-    DEBUG ((DEBUG_ERROR, "%a: Enable/disable timeout\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: Enable/disable timeout\n", __func__));
   }
 
   if ((Enable == 0) || (I2cStatusCnt == 0)) {
@@ -260,7 +260,7 @@ I2cCheckErrors (
 
   if ((ErrorStatus & DW_IC_INTR_RX_UNDER) != 0) {
     DEBUG ((DEBUG_ERROR, "%a: RX_UNDER error on i2c bus %d error status %08x\n",
-      __FUNCTION__,
+      __func__,
       Bus,
       ErrorStatus
       ));
@@ -269,7 +269,7 @@ I2cCheckErrors (
 
   if ((ErrorStatus & DW_IC_INTR_RX_OVER) != 0) {
     DEBUG ((DEBUG_ERROR, "%a: RX_OVER error on i2c bus %d error status %08x\n",
-      __FUNCTION__,
+      __func__,
       Bus,
       ErrorStatus
       ));
@@ -278,7 +278,7 @@ I2cCheckErrors (
 
   if ((ErrorStatus & DW_IC_INTR_TX_ABRT) != 0) {
     DEBUG ((DEBUG_VERBOSE, "%a: TX_ABORT at source %08x\n",
-      __FUNCTION__,
+      __func__,
       MmioRead32 (Base + DW_IC_TX_ABRT_SOURCE)
       ));
     MmioRead32 (Base + DW_IC_CLR_TX_ABRT);
@@ -303,7 +303,7 @@ I2cWaitBusNotBusy (
 
   while ((MmioRead32 (Base + DW_IC_STATUS) & DW_IC_STATUS_MST_ACTIVITY) != 0) {
     if (PollCount == 0) {
-      DEBUG ((DEBUG_VERBOSE, "%a: Timeout while waiting for bus ready\n", __FUNCTION__));
+      DEBUG ((DEBUG_VERBOSE, "%a: Timeout while waiting for bus ready\n", __func__));
       return FALSE;
     }
     PollCount--;
@@ -334,7 +334,7 @@ I2cWaitTxData (
 
   while (MmioRead32 (Base + DW_IC_TXFLR) == mI2cBusList[Bus].TxFifo) {
     if (PollCount++ >= DW_MAX_TRANSFER_POLL_COUNT) {
-      DEBUG ((DEBUG_ERROR, "%a: Timeout waiting for TX buffer available\n", __FUNCTION__));
+      DEBUG ((DEBUG_ERROR, "%a: Timeout waiting for TX buffer available\n", __func__));
       return EFI_TIMEOUT;
     }
     MicroSecondDelay (mI2cBusList[Bus].PollingTime);
@@ -359,7 +359,7 @@ I2cWaitRxData (
 
   while ((MmioRead32 (Base + DW_IC_STATUS) & DW_IC_STATUS_RFNE) == 0) {
     if (PollCount++ >= DW_MAX_TRANSFER_POLL_COUNT) {
-      DEBUG ((DEBUG_ERROR, "%a: Timeout waiting for RX buffer available\n", __FUNCTION__));
+      DEBUG ((DEBUG_ERROR, "%a: Timeout waiting for RX buffer available\n", __func__));
       return EFI_TIMEOUT;
     }
 
@@ -393,7 +393,7 @@ I2cSclInit (
   I2cSpeedKhz = I2cSpeed / 1000;
 
   DEBUG ((DEBUG_VERBOSE, "%a: Bus %d I2cClkFreq %d I2cSpeed %d\n",
-    __FUNCTION__,
+    __func__,
     Bus,
     I2cClkFreq,
     I2cSpeed
@@ -469,7 +469,7 @@ I2cFinish (
   } while (PollCount++ < DW_MAX_TRANSFER_POLL_COUNT);
 
   if (PollCount >= DW_MAX_TRANSFER_POLL_COUNT) {
-    DEBUG ((DEBUG_ERROR, "%a: Timeout waiting for TX FIFO empty\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: Timeout waiting for TX FIFO empty\n", __func__));
     return EFI_TIMEOUT;
   }
 
@@ -483,7 +483,7 @@ I2cFinish (
     MicroSecondDelay (mI2cBusList[Bus].PollingTime);
   } while (PollCount++ < DW_MAX_TRANSFER_POLL_COUNT);
 
-  DEBUG ((DEBUG_ERROR, "%a: Timeout waiting for transaction finished\n", __FUNCTION__));
+  DEBUG ((DEBUG_ERROR, "%a: Timeout waiting for transaction finished\n", __func__));
   return EFI_TIMEOUT;
 }
 
@@ -502,7 +502,7 @@ InternalI2cWrite (
   Base = mI2cBusList[Bus].Base;
 
   DEBUG ((DEBUG_VERBOSE, "%a: Write Bus %d Buf %p Length %d\n",
-    __FUNCTION__,
+    __func__,
     Bus,
     Buf,
     *Length
@@ -566,7 +566,7 @@ InternalI2cRead (
   ReadCount = 0;
 
   DEBUG ((DEBUG_VERBOSE, "%a: Read Bus %d Buf %p Length:%d\n",
-    __FUNCTION__,
+    __func__,
     Bus,
     Buf,
     *Length
@@ -620,7 +620,7 @@ InternalI2cRead (
       if (I2cCheckErrors (Bus) != 0) {
         DEBUG ((DEBUG_VERBOSE,
           "%a: Sending reading command remaining length %d CRC error\n",
-          __FUNCTION__,
+          __func__,
           *Length
           ));
         Status = EFI_CRC_ERROR;
@@ -633,7 +633,7 @@ InternalI2cRead (
       if (EFI_ERROR (Status)) {
         DEBUG ((DEBUG_VERBOSE,
           "%a: Reading remaining length %d failed to wait data\n",
-          __FUNCTION__,
+          __func__,
           *Length
           ));
 
@@ -650,7 +650,7 @@ InternalI2cRead (
 
       if (I2cCheckErrors (Bus) != 0) {
         DEBUG ((DEBUG_VERBOSE, "%a: Reading remaining length %d CRC error\n",
-          __FUNCTION__,
+          __func__,
           *Length
           ));
         Status = EFI_CRC_ERROR;

@@ -117,7 +117,7 @@ EFIAPI UpdateFdt (
     Status = EFIFdtUpdate(NewFdtBlobBase);
     if (EFI_ERROR (Status))
     {
-        DEBUG((EFI_D_ERROR, "%a(%d):EFIFdtUpdate Fail!\n", __FUNCTION__,__LINE__));
+        DEBUG((EFI_D_ERROR, "%a(%d):EFIFdtUpdate Fail!\n", __func__,__LINE__));
         goto EXIT;
     }
 
