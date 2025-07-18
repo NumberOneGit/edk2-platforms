@@ -9,7 +9,7 @@
 #include <Uefi.h>
 #include <Library/BoardInfoLib.h>
 #include <Library/FdtPlatformLib.h>
-#include <libfdt.h>
+#include <Library/FdtLib.h>
 
 EFI_STATUS
 EFIAPI
@@ -27,19 +27,19 @@ BoardInfoGetRevisionCode (
     return EFI_NOT_FOUND;
   }
 
-  Node = fdt_path_offset (Fdt, "/system");
+  Node = FdtPathOffset (Fdt, "/system");
   if (Node < 0) {
     return EFI_NOT_FOUND;
   }
 
-  Property = fdt_getprop (Fdt, Node, "linux,revision", &Length);
+  Property = FdtGetProp (Fdt, Node, "linux,revision", &Length);
   if (Property == NULL) {
     return EFI_NOT_FOUND;
   } else if (Length != sizeof (UINT32)) {
     return EFI_BAD_BUFFER_SIZE;
   }
 
-  *RevisionCode = fdt32_to_cpu (*(UINT32 *) Property);
+  *RevisionCode = Fdt32ToCpu (*(UINT32 *) Property);
 
   return EFI_SUCCESS;
 }
@@ -60,19 +60,19 @@ BoardInfoGetSerialNumber (
     return EFI_NOT_FOUND;
   }
 
-  Node = fdt_path_offset (Fdt, "/system");
+  Node = FdtPathOffset (Fdt, "/system");
   if (Node < 0) {
     return EFI_NOT_FOUND;
   }
 
-  Property = fdt_getprop (Fdt, Node, "linux,serial", &Length);
+  Property = FdtGetProp (Fdt, Node, "linux,serial", &Length);
   if (Property == NULL) {
     return EFI_NOT_FOUND;
   } else if (Length != sizeof (UINT64)) {
     return EFI_BAD_BUFFER_SIZE;
   }
 
-  *SerialNumber = fdt64_to_cpu (*(UINT64 *) Property);
+  *SerialNumber = Fdt64ToCpu (*(UINT64 *) Property);
 
   return EFI_SUCCESS;
 }

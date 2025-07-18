@@ -8,7 +8,7 @@
 
 #include <Library/DebugLib.h>
 #include <Library/FdtPlatformLib.h>
-#include <libfdt.h>
+#include <Library/FdtLib.h>
 
 VOID *
 EFIAPI
@@ -21,10 +21,10 @@ FdtPlatformGetBase (
 
   Fdt = (VOID *)(UINTN) PcdGet32 (PcdFdtBaseAddress);
 
-  FdtError = fdt_check_header (Fdt);
+  FdtError = FdtCheckHeader (Fdt);
   if (FdtError != 0) {
     DEBUG ((DEBUG_ERROR, "%a: Bad/missing FDT at 0x%p! Ret=%a\n",
-            __func__, Fdt, fdt_strerror (FdtError)));
+            __func__, Fdt, FdtStrerror (FdtError)));
     ASSERT (FALSE);
     return NULL;
   }
