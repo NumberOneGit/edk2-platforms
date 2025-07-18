@@ -27,6 +27,7 @@
 
 [LibraryClasses]
   BaseLib
+  BaseMemoryLib
   BoardInfoLib
   BoardRevisionHelperLib
   DebugLib

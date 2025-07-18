@@ -9,6 +9,7 @@
 #include <PiDxe.h>
 
 #include <Library/BaseLib.h>
+#include <Library/BaseMemoryLib.h>
 #include <Library/BoardInfoLib.h>
 #include <Library/BoardRevisionHelperLib.h>
 #include <Library/DebugLib.h>
@@ -254,7 +255,7 @@ SanitizePSCI (
 
   Node = FdtPathOffset (mFdtImage, "/psci");
   if (Node < 0) {
-    Node = wFdtAddSubnode (mFdtImage, Root, "psci");
+    Node = FdtAddSubnode (mFdtImage, Root, "psci");
   }
 
   ASSERT (Node >= 0);
@@ -263,13 +264,13 @@ SanitizePSCI (
     return EFI_NOT_FOUND;
   }
 
-  Retval = FdtSetProp_string (mFdtImage, Node, "compatible", "arm,psci-1.0");
+  Retval = FdtSetPropString (mFdtImage, Node, "compatible", "arm,psci-1.0");
   if (Retval != 0) {
     DEBUG ((DEBUG_ERROR, "Couldn't set /psci compatible property\n"));
     return EFI_NOT_FOUND;
   }
 
-  Retval = FdtSetProp_string (mFdtImage, Node, "method", "smc");
+  Retval = FdtSetPropString (mFdtImage, Node, "method", "smc");
   if (Retval != 0) {
     DEBUG ((DEBUG_ERROR, "Couldn't set /psci method property\n"));
     return EFI_NOT_FOUND;
@@ -283,7 +284,7 @@ SanitizePSCI (
 
   Node = FdtFirstSubnode (mFdtImage, Root);
   while (Node >= 0) {
-    if (FdtSetProp_string (mFdtImage, Node, "enable-method", "psci") != 0) {
+    if (FdtSetPropString (mFdtImage, Node, "enable-method", "psci") != 0) {
       DEBUG ((DEBUG_ERROR, "Failed to update enable-method for a CPU\n"));
       return EFI_NOT_FOUND;
     }
