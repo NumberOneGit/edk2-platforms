@@ -39,4 +39,10 @@ BoardRevisionGetProcessorName (
   IN  UINT32  RevisionCode
   );
 
+VOID
+EFIAPI
+BoardRevisionInitialize (
+  IN  UINT32  RevisionCode
+  );
+
 #endif /* __BOARD_REVISION_HELPER_LIB_H__ */

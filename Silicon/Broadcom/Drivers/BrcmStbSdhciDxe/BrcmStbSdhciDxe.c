@@ -39,6 +39,47 @@ SdMmcCapability (
 
   Capability = SdMmcHcSlotCapability;
 
+// Set base clock frequency (200MHz)
+  Capability->BaseClkFreq = 200;
+
+  // Set max block length (512 bytes)
+  Capability->MaxBlkLen = 2;
+
+  // Enable 8-bit support
+  Capability->BusWidth8 = 1;
+
+  // Enable high-speed support
+  Capability->HighSpeed = 1;
+
+  // Enable SDR50 support
+  Capability->Sdr50 = 1;
+
+  // Enable SDR104 support
+  Capability->Sdr104 = 1;
+
+  // Enable DDR50 support
+  Capability->Ddr50 = 1;
+
+  // Enable HS400 support
+  Capability->Hs400 = 1;
+
+  // Support 1.8V voltage
+  Capability->Voltage18 = 1;
+
+  // Support 3.3V voltage
+  Capability->Voltage33 = 1;
+
+  // Set non-removable slot
+  Capability->SlotType = 3;
+
+  // Set 64-bit system bus support
+  Capability->SysBus64V3 = 1;
+
+  // Set driver type support
+  Capability->DriverTypeA = 1;
+  Capability->DriverTypeC = 1;
+  Capability->DriverTypeD = 1;
+
   // Hardware retuning is not supported.
   Capability->RetuningMod = 0;
 
@@ -104,6 +145,21 @@ StartDevice (
   )
 {
   EFI_STATUS Status;
+
+  // Set bus width to 8-bit
+  MmioAndThenOr32 (This->CfgAddress + 0x48,  // SDIO_CFG_BUS_WIDTH
+                   ~(BIT2 | BIT1 | BIT0),
+                   BIT2);  // 8-bit mode
+
+  // Enable HS200 mode
+  MmioAndThenOr32 (This->CfgAddress + 0x1b0,  // SDIO_CFG_HS200_MODE
+                   ~BIT0,
+                   BIT0);
+
+  // Enable HS400 mode
+  MmioAndThenOr32 (This->CfgAddress + 0x1b4,  // SDIO_CFG_HS400_MODE
+                   ~BIT0,
+                   BIT0);
 
   //
   // Set the PHY DLL as clock source to support higher speed modes
