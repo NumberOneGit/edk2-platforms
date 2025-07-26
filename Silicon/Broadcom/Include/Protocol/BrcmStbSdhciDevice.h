@@ -25,21 +25,36 @@ EFI_STATUS
   IN SD_MMC_SIGNALING_VOLTAGE           Voltage
   );
 
+typedef
+EFI_STATUS
+(EFIAPI *BRCMSTB_GET_SLOT_CAPABILITY) (
+  IN  BRCMSTB_SDHCI_DEVICE_PROTOCOL    *This,
+  IN  UINT8                            Slot,
+  OUT VOID                           *CapabilityBuffer,
+  IN  UINTN                           CapabilityBufferSize,
+  OUT UINT32                         *BaseClkFreq OPTIONAL
+);
+
 struct _BRCMSTB_SDHCI_DEVICE_PROTOCOL {
   //
   // Controller platform info
   //
   EFI_PHYSICAL_ADDRESS                  HostAddress;
   EFI_PHYSICAL_ADDRESS                  CfgAddress;
-  NON_DISCOVERABLE_DEVICE_DMA_TYPE      DmaType;
+  NON_DISCOVERABLE_DEVICE_DMA_TYPE     DmaType;
 
-  BOOLEAN                               IsSlotRemovable;
+  BOOLEAN                             IsSlotRemovable;
 
   //
   // Optional callback for setting the signaling voltage via
   // an external regulator.
   //
-  BRCMSTB_SDHCI_SET_SIGNALING_VOLTAGE   SetSignalingVoltage;
+  BRCMSTB_SDHCI_SET_SIGNALING_VOLTAGE SetSignalingVoltage;
+
+  //
+  // Optional callback to override or provide the slot capability.
+  //
+  BRCMSTB_GET_SLOT_CAPABILITY          GetSlotCapability;
 };
 
 extern EFI_GUID gBrcmStbSdhciDeviceProtocolGuid;

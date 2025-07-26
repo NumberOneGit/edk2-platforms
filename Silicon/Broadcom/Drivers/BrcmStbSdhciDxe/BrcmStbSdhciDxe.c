@@ -22,35 +22,24 @@ STATIC
 EFI_STATUS
 EFIAPI
 SdMmcCapability (
-  IN      EFI_HANDLE     ControllerHandle,
-  IN      UINT8          Slot,
-  IN OUT  VOID           *SdMmcHcSlotCapability,
-  IN OUT  UINT32         *BaseClkFreq
+  IN      EFI_HANDLE                      ControllerHandle,
+  IN      UINT8                           Slot,
+  IN OUT  VOID                            *SdMmcHcSlotCapability,
+  IN OUT  UINT32                          *BaseClkFreq
   )
 {
-  EFI_STATUS                      Status;
-  BRCMSTB_SDHCI_DEVICE_PROTOCOL  *Device;
-  SD_MMC_HC_SLOT_CAP             *Capability;
+  SD_MMC_HC_SLOT_CAP     *Capability;
 
   if (Slot != 0) {
     return EFI_UNSUPPORTED;
   }
-
   if (SdMmcHcSlotCapability == NULL) {
     return EFI_INVALID_PARAMETER;
   }
 
-  Status = gBS->HandleProtocol(ControllerHandle, &gBrcmStbSdhciDeviceProtocolGuid, (VOID **)&Device);
-  if (EFI_ERROR(Status)) {
-    return Status;
-  }
-
-  if (Device->GetSlotCapability != NULL) {
-    return Device->GetSlotCapability(Device, Slot, SdMmcHcSlotCapability, BaseClkFreq);
-  }
-
   Capability = SdMmcHcSlotCapability;
-  ZeroMem(Capability, sizeof(SD_MMC_HC_SLOT_CAP));
+
+  // Hardware retuning is not supported.
   Capability->RetuningMod = 0;
 
   return EFI_SUCCESS;
@@ -115,21 +104,6 @@ StartDevice (
   )
 {
   EFI_STATUS Status;
-
-  // Set bus width to 8-bit
-  MmioAndThenOr32 (This->CfgAddress + 0x48,  // SDIO_CFG_BUS_WIDTH
-                   ~(BIT2 | BIT1 | BIT0),
-                   BIT2);  // 8-bit mode
-
-  // Enable HS200 mode
-  MmioAndThenOr32 (This->CfgAddress + 0x1b0,  // SDIO_CFG_HS200_MODE
-                   ~BIT0,
-                   BIT0);
-
-  // Enable HS400 mode
-  MmioAndThenOr32 (This->CfgAddress + 0x1b4,  // SDIO_CFG_HS400_MODE
-                   ~BIT0,
-                   BIT0);
 
   //
   // Set the PHY DLL as clock source to support higher speed modes
