@@ -67,21 +67,26 @@ SdMmcCapability (
   Capability->Voltage18 = 1;
 
   // Support 3.3V voltage
-  Capability->Voltage33 = 1;
+  Capability->Voltage33 = 0;
 
   // Set non-removable slot
-  Capability->SlotType = 3;
+  Capability->SlotType = 0;
 
   // Set 64-bit system bus support
   Capability->SysBus64V3 = 1;
 
+  // Set DMA support
+  Capability->Adma2 = 1;
+  Capability->Sdma = 1;
+
   // Set driver type support
   Capability->DriverTypeA = 1;
-  Capability->DriverTypeC = 1;
-  Capability->DriverTypeD = 1;
+  Capability->DriverTypeC = 0;
+  Capability->DriverTypeD = 0;
 
   // Hardware retuning is not supported.
-  Capability->RetuningMod = 0;
+  Capability->TimerCount = 1;
+  Capability->RetuningMod = 2;
 
   return EFI_SUCCESS;
 }
