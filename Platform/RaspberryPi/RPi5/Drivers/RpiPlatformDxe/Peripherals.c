@@ -15,12 +15,62 @@
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Protocol/BrcmStbSdhciDevice.h>
 #include <Library/BoardRevisionHelperLib.h>
+#include <Library/BaseMemoryLib.h>
 
 #include "Peripherals.h"
 #include "ConfigTable.h"
 #include "RpiPlatformDxe.h"
 
 extern UINT32 gBoardType;
+
+typedef struct {
+  // Lower 32 bits
+  UINT32 TimeoutFreq   : 6;
+  UINT32 Reserved      : 1;
+  UINT32 TimeoutUnit   : 1;
+  UINT32 BaseClkFreq   : 8;
+  UINT32 MaxBlkLen     : 2;
+  UINT32 BusWidth8     : 1;
+  UINT32 Adma2         : 1;
+  UINT32 Reserved2     : 1;
+  UINT32 HighSpeed     : 1;
+  UINT32 Sdma          : 1;
+  UINT32 SuspRes       : 1;
+  UINT32 Voltage33     : 1;
+  UINT32 Voltage30     : 1;
+  UINT32 Voltage18     : 1;
+  UINT32 SysBus64V4    : 1;
+  UINT32 SysBus64V3    : 1;
+  UINT32 AsyncInt      : 1;
+  UINT32 SlotType      : 2;
+
+  // Upper 32 bits
+  UINT32 Sdr50         : 1;
+  UINT32 Sdr104        : 1;
+  UINT32 Ddr50         : 1;
+  UINT32 Reserved3     : 1;
+  UINT32 DriverTypeA   : 1;
+  UINT32 DriverTypeC   : 1;
+  UINT32 DriverTypeD   : 1;
+  UINT32 DriverType4   : 1;
+  UINT32 TimerCount    : 4;
+  UINT32 Reserved4     : 1;
+  UINT32 TuningSDR50   : 1;
+  UINT32 RetuningMod   : 2;
+  UINT32 ClkMultiplier : 8;
+  UINT32 Reserved5     : 7;
+  UINT32 Hs400         : 1;
+} SD_MMC_HC_SLOT_CAP;
+
+EFI_STATUS
+EFIAPI
+Cm5EmmcSlotCapability(
+  IN  BRCMSTB_SDHCI_DEVICE_PROTOCOL *This,
+  IN  UINT8                         Slot,
+  OUT VOID                         *CapabilityBuffer,
+  IN  UINTN                        CapabilityBufferSize,
+  OUT UINT32                       *BaseClkFreq OPTIONAL
+);
 
 STATIC
 EFI_STATUS
@@ -102,7 +152,7 @@ InitGpioPinctrls (
     case 0x18: // CM5
       // No card detect, enable 8-bit mode for CM5
       mSdController.IsSlotRemovable = FALSE;
-      mSdController.GetSlotCapability = EmmcSlotCapability;
+      mSdController.GetSlotCapability = Cm5EmmcSlotCapability;
       break;
 
     case 0x1a: // CM5 Lite
@@ -114,19 +164,24 @@ InitGpioPinctrls (
   return EFI_SUCCESS;
 }
 
-STATIC
+__attribute__((unused))
 EFI_STATUS
 EFIAPI
-EmmcSlotCapability(
+Cm5EmmcSlotCapability(
   IN  BRCMSTB_SDHCI_DEVICE_PROTOCOL *This,
-  IN  UINT8                          Slot,
-  OUT SD_MMC_HC_SLOT_CAP            *Capability,
+  IN  UINT8                         Slot,
+  OUT VOID                         *CapabilityBuffer,
+  IN  UINTN                        CapabilityBufferSize,
   OUT UINT32                       *BaseClkFreq OPTIONAL
-  )
+)
 {
-  if (Slot != 0 || Capability == NULL) {
+  SD_MMC_HC_SLOT_CAP *Capability;
+
+  if (Slot != 0 || CapabilityBuffer == NULL || CapabilityBufferSize < sizeof(SD_MMC_HC_SLOT_CAP)) {
     return EFI_INVALID_PARAMETER;
   }
+
+  Capability = (SD_MMC_HC_SLOT_CAP *)CapabilityBuffer;
 
   ZeroMem(Capability, sizeof(SD_MMC_HC_SLOT_CAP));
   Capability->BaseClkFreq   = 200;

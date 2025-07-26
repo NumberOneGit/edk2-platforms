@@ -22,25 +22,43 @@ STATIC
 EFI_STATUS
 EFIAPI
 SdMmcCapability (
-  IN      EFI_HANDLE                      ControllerHandle,
-  IN      UINT8                           Slot,
-  IN OUT  VOID                            *SdMmcHcSlotCapability,
-  IN OUT  UINT32                          *BaseClkFreq
+  IN      EFI_HANDLE     ControllerHandle,
+  IN      UINT8          Slot,
+  IN OUT  VOID           *SdMmcHcSlotCapability,
+  IN OUT  UINT32         *BaseClkFreq
   )
 {
+  EFI_STATUS                      Status;
+  BRCMSTB_SDHCI_DEVICE_PROTOCOL  *Device;
+
   SD_MMC_HC_SLOT_CAP     *Capability;
 
   if (Slot != 0) {
     return EFI_UNSUPPORTED;
   }
+
   if (SdMmcHcSlotCapability == NULL) {
     return EFI_INVALID_PARAMETER;
   }
 
   Capability = SdMmcHcSlotCapability;
 
-  // Hardware retuning is not supported.
   Capability->RetuningMod = 0;
+
+  Status = gBS->HandleProtocol(
+                  ControllerHandle,
+                  &gBrcmStbSdhciDeviceProtocolGuid,
+                  (VOID **)&Device);
+  if (EFI_ERROR(Status)) {
+    return Status;
+  }
+
+  if (Device->GetSlotCapability != NULL) {
+    return Device->GetSlotCapability(Device, Slot,
+                                    SdMmcHcSlotCapability,
+                                    sizeof(SD_MMC_HC_SLOT_CAP),
+                                    BaseClkFreq);
+  }
 
   return EFI_SUCCESS;
 }
