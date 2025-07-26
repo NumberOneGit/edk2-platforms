@@ -102,6 +102,7 @@ InitGpioPinctrls (
     case 0x18: // CM5
       // No card detect, enable 8-bit mode for CM5
       mSdController.IsSlotRemovable = FALSE;
+      mSdController.GetSlotCapability = EmmcSlotCapability;
       break;
 
     case 0x1a: // CM5 Lite
@@ -110,6 +111,46 @@ InitGpioPinctrls (
       break;
   }
 
+  return EFI_SUCCESS;
+}
+
+STATIC
+EFI_STATUS
+EFIAPI
+EmmcSlotCapability(
+  IN  BRCMSTB_SDHCI_DEVICE_PROTOCOL *This,
+  IN  UINT8                          Slot,
+  OUT SD_MMC_HC_SLOT_CAP            *Capability,
+  OUT UINT32                       *BaseClkFreq OPTIONAL
+  )
+{
+  if (Slot != 0 || Capability == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  ZeroMem(Capability, sizeof(SD_MMC_HC_SLOT_CAP));
+  Capability->BaseClkFreq   = 200;
+  Capability->MaxBlkLen     = 2;
+  Capability->BusWidth8     = 1;
+  Capability->HighSpeed     = 1;
+  Capability->Sdr50         = 1;
+  Capability->Sdr104        = 1;
+  Capability->Ddr50         = 1;
+  Capability->Hs400         = 1;
+  Capability->Voltage18     = 1;
+  Capability->SlotType      = 0;
+  Capability->SysBus64V3    = 1;
+  Capability->SysBus64V4    = 1;
+  Capability->Adma2         = 1;
+  Capability->Sdma          = 1;
+  Capability->DriverTypeA   = 1;
+  Capability->TimerCount    = 1;
+  Capability->RetuningMod   = 2;
+  Capability->TuningSDR50   = 1;
+
+  if (BaseClkFreq != NULL) {
+    *BaseClkFreq = Capability->BaseClkFreq;
+  }
   return EFI_SUCCESS;
 }
 

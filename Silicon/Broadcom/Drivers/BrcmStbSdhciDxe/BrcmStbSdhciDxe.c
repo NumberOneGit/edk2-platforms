@@ -22,71 +22,36 @@ STATIC
 EFI_STATUS
 EFIAPI
 SdMmcCapability (
-  IN      EFI_HANDLE                      ControllerHandle,
-  IN      UINT8                           Slot,
-  IN OUT  VOID                            *SdMmcHcSlotCapability,
-  IN OUT  UINT32                          *BaseClkFreq
+  IN      EFI_HANDLE     ControllerHandle,
+  IN      UINT8          Slot,
+  IN OUT  VOID           *SdMmcHcSlotCapability,
+  IN OUT  UINT32         *BaseClkFreq
   )
 {
-  SD_MMC_HC_SLOT_CAP     *Capability;
+  EFI_STATUS                      Status;
+  BRCMSTB_SDHCI_DEVICE_PROTOCOL  *Device;
+  SD_MMC_HC_SLOT_CAP             *Capability;
 
   if (Slot != 0) {
     return EFI_UNSUPPORTED;
   }
+
   if (SdMmcHcSlotCapability == NULL) {
     return EFI_INVALID_PARAMETER;
   }
 
+  Status = gBS->HandleProtocol(ControllerHandle, &gBrcmStbSdhciDeviceProtocolGuid, (VOID **)&Device);
+  if (EFI_ERROR(Status)) {
+    return Status;
+  }
+
+  if (Device->GetSlotCapability != NULL) {
+    return Device->GetSlotCapability(Device, Slot, SdMmcHcSlotCapability, BaseClkFreq);
+  }
+
   Capability = SdMmcHcSlotCapability;
-
-// Set base clock frequency (200MHz)
-  Capability->BaseClkFreq = 200;
-
-  // Set max block length (512 bytes)
-  Capability->MaxBlkLen = 2;
-
-  // Enable 8-bit support
-  Capability->BusWidth8 = 1;
-
-  // Enable high-speed support
-  Capability->HighSpeed = 1;
-
-  // Enable SDR50 support
-  Capability->Sdr50 = 1;
-
-  // Enable SDR104 support
-  Capability->Sdr104 = 1;
-
-  // Enable DDR50 support
-  Capability->Ddr50 = 1;
-
-  // Enable HS400 support
-  Capability->Hs400 = 1;
-
-  // Support 1.8V voltage
-  Capability->Voltage18 = 1;
-
-  // Support 3.3V voltage
-  Capability->Voltage33 = 0;
-
-  // Set non-removable slot
-  Capability->SlotType = 0;
-
-  // Set 64-bit system bus support
-  Capability->SysBus64V3 = 1;
-
-  // Set DMA support
-  Capability->Adma2 = 1;
-  Capability->Sdma = 1;
-
-  // Set driver type support
-  Capability->DriverTypeA = 1;
-  Capability->DriverTypeC = 0;
-  Capability->DriverTypeD = 0;
-
-  // Hardware retuning is not supported.
-  Capability->TimerCount = 1;
-  Capability->RetuningMod = 2;
+  ZeroMem(Capability, sizeof(SD_MMC_HC_SLOT_CAP));
+  Capability->RetuningMod = 0;
 
   return EFI_SUCCESS;
 }
