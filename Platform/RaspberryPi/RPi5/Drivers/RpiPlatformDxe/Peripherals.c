@@ -14,10 +14,13 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Protocol/BrcmStbSdhciDevice.h>
+#include <Library/BoardRevisionHelperLib.h>
 
 #include "Peripherals.h"
 #include "ConfigTable.h"
 #include "RpiPlatformDxe.h"
+
+extern UINT32 gBoardType;
 
 STATIC
 EFI_STATUS
@@ -27,8 +30,10 @@ SdControllerSetSignalingVoltage (
   IN SD_MMC_SIGNALING_VOLTAGE           Voltage
   )
 {
-  // sd_io_1v8_reg
-  GpioWrite (BCM2712_GIO_AON, 3, Voltage == SdMmcSignalingVoltage18);
+  if (gBoardType != 0x18) {
+    // sd_io_1v8_reg
+    GpioWrite (BCM2712_GIO_AON, 3, Voltage == SdMmcSignalingVoltage18);
+  }
 
   return EFI_SUCCESS;
 }
@@ -38,6 +43,7 @@ STATIC BRCMSTB_SDHCI_DEVICE_PROTOCOL mSdController = {
   .CfgAddress             = BCM2712_BRCMSTB_SDIO1_CFG_BASE,
   .DmaType                = NonDiscoverableDeviceDmaTypeNonCoherent,
   .IsSlotRemovable        = TRUE,
+  .NoCD                   = FALSE,
   .SetSignalingVoltage    = SdControllerSetSignalingVoltage
 };
 
@@ -68,27 +74,42 @@ InitGpioPinctrls (
   VOID
   )
 {
-  // SD card detect
-  GpioSetFunction (BCM2712_GIO_AON, 5, GIO_AON_PIN5_ALT_SD_CARD_G);
-  GpioSetPull (BCM2712_GIO_AON, 5, BCM2712_GPIO_PIN_PULL_UP);
+  // Common WiFi pins (30-35) - consistent across all models
+  GpioSetFunction(BCM2712_GIO, 30, GIO_PIN30_ALT_SD2);
+  GpioSetPull(BCM2712_GIO, 30, BCM2712_GPIO_PIN_PULL_NONE);
+  GpioSetFunction(BCM2712_GIO, 31, GIO_PIN31_ALT_SD2);
+  GpioSetPull(BCM2712_GIO, 31, BCM2712_GPIO_PIN_PULL_UP);
+  GpioSetFunction(BCM2712_GIO, 32, GIO_PIN32_ALT_SD2);
+  GpioSetPull(BCM2712_GIO, 32, BCM2712_GPIO_PIN_PULL_UP);
+  GpioSetFunction(BCM2712_GIO, 33, GIO_PIN33_ALT_SD2);
+  GpioSetPull(BCM2712_GIO, 33, BCM2712_GPIO_PIN_PULL_UP);
+  GpioSetFunction(BCM2712_GIO, 34, GIO_PIN34_ALT_SD2);
+  GpioSetPull(BCM2712_GIO, 34, BCM2712_GPIO_PIN_PULL_UP);
+  GpioSetFunction(BCM2712_GIO, 35, GIO_PIN35_ALT_SD2);
+  GpioSetPull(BCM2712_GIO, 35, BCM2712_GPIO_PIN_PULL_UP);
 
-  // Route SDIO to Wi-Fi
-  GpioSetFunction (BCM2712_GIO, 30, GIO_PIN30_ALT_SD2);
-  GpioSetPull (BCM2712_GIO, 30, BCM2712_GPIO_PIN_PULL_NONE);
-  GpioSetFunction (BCM2712_GIO, 31, GIO_PIN31_ALT_SD2);
-  GpioSetPull (BCM2712_GIO, 31, BCM2712_GPIO_PIN_PULL_UP);
-  GpioSetFunction (BCM2712_GIO, 32, GIO_PIN32_ALT_SD2);
-  GpioSetPull (BCM2712_GIO, 32, BCM2712_GPIO_PIN_PULL_UP);
-  GpioSetFunction (BCM2712_GIO, 33, GIO_PIN33_ALT_SD2);
-  GpioSetPull (BCM2712_GIO, 33, BCM2712_GPIO_PIN_PULL_UP);
-  GpioSetFunction (BCM2712_GIO, 34, GIO_PIN34_ALT_SD2);
-  GpioSetPull (BCM2712_GIO, 34, BCM2712_GPIO_PIN_PULL_UP);
-  GpioSetFunction (BCM2712_GIO, 35, GIO_PIN35_ALT_SD2);
-  GpioSetPull (BCM2712_GIO, 35, BCM2712_GPIO_PIN_PULL_UP);
+  // wl_on_reg - consistent across all models
+  GpioWrite(BCM2712_GIO, 28, TRUE);
 
-  // wl_on_reg
-  GpioWrite (BCM2712_GIO, 28, TRUE);
-  GpioSetDirection (BCM2712_GIO, 28, BCM2712_GPIO_PIN_OUTPUT);
+  switch (gBoardType) {
+    case 0x17: // Pi 5 Model B
+    case 0x19: // Pi 500
+      // Enable card detect for Pi 5/Pi 500
+      GpioSetFunction(BCM2712_GIO_AON, 5, GIO_AON_PIN5_ALT_SD_CARD_G);
+      GpioSetPull(BCM2712_GIO_AON, 5, BCM2712_GPIO_PIN_PULL_UP);
+      break;
+
+    case 0x18: // CM5
+      // No card detect, enable 8-bit mode for CM5
+      mSdController.IsSlotRemovable = FALSE;
+      mSdController.NoCD = TRUE;
+      break;
+
+    case 0x1a: // CM5 Lite
+      // No card detect for CM5 Lite
+      mSdController.NoCD = TRUE;
+      break;
+  }
 
   return EFI_SUCCESS;
 }
@@ -139,6 +160,7 @@ SetupPeripherals (
   VOID
   )
 {
+  BoardRevisionInitialize(mBoardRevisionCode);
   InitGpioPinctrls ();
 
   RegisterSdControllers ();

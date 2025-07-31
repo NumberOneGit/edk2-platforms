@@ -28,19 +28,40 @@ SdMmcCapability (
   IN OUT  UINT32                          *BaseClkFreq
   )
 {
-  SD_MMC_HC_SLOT_CAP     *Capability;
+  EFI_STATUS                      Status;
+  BRCMSTB_SDHCI_DEVICE_PROTOCOL   *Device;
+  SD_MMC_HC_SLOT_CAP              *Capability;
 
   if (Slot != 0) {
     return EFI_UNSUPPORTED;
   }
+
   if (SdMmcHcSlotCapability == NULL) {
     return EFI_INVALID_PARAMETER;
   }
 
   Capability = SdMmcHcSlotCapability;
 
-  // Hardware retuning is not supported.
+  //
+  // Get the BRCMSTB SDHCI device protocol
+  //
+  Status = gBS->HandleProtocol (
+                  ControllerHandle,
+                  &gBrcmStbSdhciDeviceProtocolGuid,
+                  (VOID **)&Device
+                  );
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "SdMmcCapability: Failed to get BRCMSTB SDHCI protocol - %r\n", Status));
+    return Status;
+  }
+
+  // Set new values
+  if (Device->IsSlotRemovable) {
   Capability->RetuningMod = 0;
+  }
+  if (!Device->IsSlotRemovable) {
+  Capability->Voltage33 = 0;
+  }
 
   return EFI_SUCCESS;
 }
@@ -113,7 +134,7 @@ StartDevice (
                    ~SDIO_CFG_MAX_50MHZ_MODE_ENABLE,
                    SDIO_CFG_MAX_50MHZ_MODE_STRAP_OVERRIDE);
 
-  if (This->IsSlotRemovable) {
+  if (This->IsSlotRemovable && !This->NoCD) {
     MmioAndThenOr32 (This->CfgAddress + SDIO_CFG_SD_PIN_SEL,
                      ~SDIO_CFG_SD_PIN_SEL_MASK,
                      SDIO_CFG_SD_PIN_SEL_CARD);

@@ -17,6 +17,17 @@
 #define RPI_PROCESSOR(Rev)        ((Rev >> 12) & 0x0F)
 #define RPI_TYPE(Rev)             ((Rev >> 4) & 0xFF)
 
+UINT32 gBoardType = 0;
+
+VOID
+EFIAPI
+BoardRevisionInitialize (
+  IN  UINT32  RevisionCode
+  )
+{
+  gBoardType = RPI_TYPE(RevisionCode);
+}
+
 UINT64
 EFIAPI
 BoardRevisionGetMemorySize (

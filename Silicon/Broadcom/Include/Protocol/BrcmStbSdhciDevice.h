@@ -34,6 +34,7 @@ struct _BRCMSTB_SDHCI_DEVICE_PROTOCOL {
   NON_DISCOVERABLE_DEVICE_DMA_TYPE      DmaType;
 
   BOOLEAN                               IsSlotRemovable;
+  BOOLEAN                               NoCD;
 
   //
   // Optional callback for setting the signaling voltage via
