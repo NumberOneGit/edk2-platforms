@@ -407,7 +407,7 @@
 
   # UARTs
   gArmPlatformTokenSpaceGuid.PL011UartClkInHz|44000000
-  gArmPlatformTokenSpaceGuid.PL011UartInterrupt|152
+  gArmPlatformTokenSpaceGuid.PL011UartInterrupt|153
   gEfiMdePkgTokenSpaceGuid.PcdUartDefaultBaudRate|115200
   gEfiMdeModulePkgTokenSpaceGuid.PcdSerialRegisterBase|0x107d001000
 
