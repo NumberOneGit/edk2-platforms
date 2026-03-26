@@ -20,6 +20,7 @@
 [Packages]
   EmbeddedPkg/EmbeddedPkg.dec
   MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
   Platform/RaspberryPi/RaspberryPi.dec
 
 [LibraryClasses]
