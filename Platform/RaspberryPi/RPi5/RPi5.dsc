@@ -497,6 +497,15 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase|0
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase|0
 
+  #
+  # Board identity, published at runtime by RpiPlatformDxe from the FDT
+  # revision code. Declared Dynamic (not DynamicEx) so consumers can use
+  # PcdGet8 / PcdSet8S without going through the Ex API.
+  #
+  gBcm27xxTokenSpaceGuid.PcdBoardType|0x00
+  gBcm27xxTokenSpaceGuid.PcdBcm2712Stepping|0x00
+  gBcm27xxTokenSpaceGuid.PcdBoardHasWifi|TRUE
+
 ################################################################################
 #
 # Components Section - list of all EDK II Modules needed by this Platform
