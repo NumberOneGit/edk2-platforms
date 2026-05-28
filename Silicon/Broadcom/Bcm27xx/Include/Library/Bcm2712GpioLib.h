@@ -100,4 +100,40 @@ GpioSetDirection (
   IN  BCM2712_GPIO_PIN_DIRECTION      Direction
   );
 
+//
+// Logical-function dispatch. Programs the correct (pin, alt) for the named
+// function on the current silicon stepping and board family. Routing data
+// lives in the private Bcm2712LogicalFunctions.c table cross-referenced from
+// Linux's bcm2712 pin_funcs[] arrays.
+//
+// Function names follow the Linux convention (lowercase, e.g. "sd2_clk",
+// "sd_card_g", "vc_uart0"). Per-pin disambiguation suffixes are used where
+// a single Linux function name lands on multiple pins (e.g. "sd2_clk" for
+// SDIO2 pin 30 vs the rest of the SDIO bus).
+//
+// Returns EFI_NOT_FOUND if the function name is unknown, or EFI_UNSUPPORTED
+// if the function has no routing on the current variant (i.e. callers can
+// invoke it unconditionally and let the resolver short-circuit when the
+// function does not exist on this board).
+//
+EFI_STATUS
+EFIAPI
+GpioApplyFunc (
+  IN  CONST CHAR8                     *Name
+  );
+
+//
+// Same lookup as GpioApplyFunc but returns the resolved route without
+// programming the mux. Useful for callers that need to know the pin
+// number (e.g. to apply pull settings or read the GPIO line).
+//
+EFI_STATUS
+EFIAPI
+GpioResolveFunc (
+  IN  CONST CHAR8                     *Name,
+  OUT BCM2712_GPIO_TYPE               *Type,
+  OUT UINT8                           *Pin,
+  OUT UINT8                           *Alt
+  );
+
 #endif // __BCM2712_GPIO_LIB_H__

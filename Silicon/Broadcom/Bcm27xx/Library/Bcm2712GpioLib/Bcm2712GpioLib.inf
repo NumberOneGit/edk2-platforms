@@ -16,15 +16,18 @@
 
 [Sources]
   Bcm2712GpioLib.c
+  Bcm2712LogicalFunctions.c
 
 [Packages]
   MdePkg/MdePkg.dec
   Silicon/Broadcom/Bcm27xx/Bcm27xx.dec
 
 [LibraryClasses]
+  BaseLib
   DebugLib
   IoLib
   PcdLib
 
 [Pcd]
+  gBcm27xxTokenSpaceGuid.PcdBoardType                ## CONSUMES
   gBcm27xxTokenSpaceGuid.PcdBcm2712Stepping          ## CONSUMES
