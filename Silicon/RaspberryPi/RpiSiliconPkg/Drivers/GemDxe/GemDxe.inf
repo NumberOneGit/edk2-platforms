@@ -1,0 +1,55 @@
+## @file
+#  GEM Ethernet DXE Driver
+#
+#  Copyright (c) 2026
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x0001001B
+  BASE_NAME                      = GemDxe
+  FILE_GUID                      = 8D7BD016-A4D0-467E-8D53-E7FEEBF75101
+  MODULE_TYPE                    = UEFI_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = GemDxeEntryPoint
+  PCD_FIXED_AT_BUILD             = CONSUMES
+
+[Sources]
+  GemDxe.c
+  GemDxe.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  Platform/RaspberryPi/RaspberryPi.dec
+  Silicon/Broadcom/Bcm27xx/Bcm27xx.dec
+  Silicon/RaspberryPi/RpiSiliconPkg/RpiSiliconPkg.dec
+
+[LibraryClasses]
+  UefiDriverEntryPoint
+  BaseMemoryLib
+  DebugLib
+  BaseLib
+  IoLib
+  MemoryAllocationLib
+  PcdLib
+  TimerLib
+  UefiBootServicesTableLib
+
+[Pcd]
+  gBcm27xxTokenSpaceGuid.PcdBoardType                ## CONSUMES
+
+[Protocols]
+  gEfiDriverBindingProtocolGuid    ## PRODUCES
+  gRp1BusProtocolGuid              ## CONSUMES
+  gEfiDevicePathProtocolGuid       ## PRODUCES
+  gEfiSimpleNetworkProtocolGuid    ## PRODUCES
+  gRaspberryPiFirmwareProtocolGuid ## CONSUMES
+
+[Guids]
+  gEfiEventExitBootServicesGuid    ## CONSUMES
+
+[Depex]
+  gRp1BusProtocolGuid

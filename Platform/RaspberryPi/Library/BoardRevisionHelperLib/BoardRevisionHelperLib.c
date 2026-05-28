@@ -16,6 +16,60 @@
 #define RPI_MANUFACTURER(Rev)     ((Rev >> 16) & 0x0F)
 #define RPI_PROCESSOR(Rev)        ((Rev >> 12) & 0x0F)
 #define RPI_TYPE(Rev)             ((Rev >> 4) & 0xFF)
+#define RPI_REVISION(Rev)         ((Rev) & 0x0F)
+
+UINT8
+EFIAPI
+BoardRevisionGetBoardType (
+  IN  UINT32  RevisionCode
+  )
+{
+  return (UINT8) RPI_TYPE (RevisionCode);
+}
+
+BCM2712_STEPPING
+EFIAPI
+BoardRevisionGetStepping (
+  IN  UINT32  RevisionCode
+  )
+{
+  //
+  // Pi 5 Model B rev 1.0 is the only board that uses the BCM2712 C1 pinctrl
+  // and uart10 layout. Later Pi 5 boards (rev >= 1.1) and all CM5 / Pi 500
+  // variants ship the D0 layout.
+  //
+  if ((RPI_TYPE (RevisionCode) == 0x17) && (RPI_REVISION (RevisionCode) == 0)) {
+    return BCM2712_STEPPING_C1;
+  }
+  return BCM2712_STEPPING_D0;
+}
+
+BOOLEAN
+EFIAPI
+BoardRevisionGetHasWifi (
+  IN  UINT32  RevisionCode,
+  IN  UINT32  ExtendedRevisionCode
+  )
+{
+  //
+  // CM5 (0x18) and CM5 Lite (0x1A) are the only Pi 5 family boards that ship
+  // in WiFi and no-WiFi variants. The presence flag lives in BIT31 of the
+  // upper 32-bit OTP-sourced extended revision code (0 == WiFi, 1 == no WiFi).
+  // Other board types have fixed WiFi presence. When the extended revision is
+  // unavailable (ExtendedRevisionCode == 0), assume WiFi is present so a
+  // failed OTP read does not silently disable hardware.
+  //
+  switch (RPI_TYPE (RevisionCode)) {
+    case 0x18:
+    case 0x1A:
+      if (ExtendedRevisionCode == 0) {
+        return TRUE;
+      }
+      return (ExtendedRevisionCode & BIT31) == 0;
+    default:
+      return TRUE;
+  }
+}
 
 UINT64
 EFIAPI

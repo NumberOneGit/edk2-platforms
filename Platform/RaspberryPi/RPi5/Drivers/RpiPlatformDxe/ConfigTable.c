@@ -10,12 +10,15 @@
 #include <IndustryStandard/Acpi.h>
 #include <IndustryStandard/Pci.h>
 #include <IndustryStandard/PeImage.h>
+#include <IndustryStandard/SerialPortConsoleRedirectionTable.h>
 #include <Library/AcpiLib.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/BoardRevisionHelperLib.h>
 #include <Library/DebugLib.h>
 #include <Library/DxeServicesTableLib.h>
 #include <Library/MemoryAllocationLib.h>
+#include <Library/PcdLib.h>
 #include <Library/PeCoffGetEntryPointLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
@@ -684,6 +687,67 @@ ReclaimMemoryExit:
   }
 }
 
+//
+// SPCR carries the OS-facing serial-console interrupt. BCM2712 uart10 is at
+// GIC SPI 121 on C1 silicon and GIC SPI 120 on D0; the build-time PCD picks
+// one stepping. Runtime fixup patches the table so a single firmware binary
+// reports the correct GSIV to the OS regardless of stepping. UEFI's own
+// console is unaffected (PL011SerialPortLib is polled and never reads this
+// PCD), so a malformed/unfound SPCR is at worst an OS optimization missed.
+//
+STATIC
+VOID
+AcpiFixupSpcrInterrupt (
+  IN EFI_ACPI_SDT_PROTOCOL  *AcpiSdt
+  )
+{
+  EFI_STATUS                                       Status;
+  UINTN                                            TableKey;
+  UINTN                                            TableIndex;
+  EFI_ACPI_SERIAL_PORT_CONSOLE_REDIRECTION_TABLE   *Spcr;
+  UINT32                                           Gsiv;
+  UINT32                                           BuildDefault;
+
+  TableIndex = 0;
+  Status = AcpiLocateTableBySignature (
+             AcpiSdt,
+             EFI_ACPI_6_3_SERIAL_PORT_CONSOLE_REDIRECTION_TABLE_SIGNATURE,
+             &TableIndex,
+             (EFI_ACPI_DESCRIPTION_HEADER **)&Spcr,
+             &TableKey
+             );
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_INFO, "%a: SPCR not installed, nothing to patch.\n", __func__));
+    return;
+  }
+
+  Gsiv = (PcdGet8 (PcdBcm2712Stepping) == BCM2712_STEPPING_C1) ? 153 : 152;
+  BuildDefault = FixedPcdGet32 (PL011UartInterrupt);
+
+  //
+  // Refuse to patch if the field has already been changed from the build-time
+  // default: something else in the FV may have rewritten it, and we shouldn't
+  // silently stomp that. Falls back to polled mode in the OS rather than
+  // misdirecting the IRQ.
+  //
+  if (Spcr->GlobalSystemInterrupt != BuildDefault) {
+    DEBUG ((DEBUG_WARN,
+            "%a: SPCR GSIV=%u != build default %u; skipping patch.\n",
+            __func__, Spcr->GlobalSystemInterrupt, BuildDefault));
+    return;
+  }
+
+  if (Spcr->GlobalSystemInterrupt == Gsiv) {
+    return;
+  }
+
+  DEBUG ((DEBUG_INFO, "%a: Patching SPCR GSIV %u -> %u for %a stepping\n",
+          __func__, Spcr->GlobalSystemInterrupt, Gsiv,
+          (PcdGet8 (PcdBcm2712Stepping) == BCM2712_STEPPING_C1) ? "C1" : "D0"));
+  Spcr->GlobalSystemInterrupt = Gsiv;
+  AcpiUpdateChecksum ((UINT8 *)Spcr, Spcr->Header.Length);
+}
+
 STATIC
 EFI_STATUS
 EFIAPI
@@ -738,6 +802,8 @@ InstallAcpiTables (
   DsdtFixupPcie (mAcpiSdtProtocol, TableHandle);
 
   mAcpiSdtProtocol->Close (TableHandle);
+
+  AcpiFixupSpcrInterrupt (mAcpiSdtProtocol);
 
   return EFI_SUCCESS;
 }

@@ -24,6 +24,7 @@
 [Packages]
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
+  ArmPlatformPkg/ArmPlatformPkg.dec
   EmbeddedPkg/EmbeddedPkg.dec
   Platform/RaspberryPi/RaspberryPi.dec
   Platform/RaspberryPi/RPi5/RPi5.dec
@@ -43,6 +44,7 @@
   DxeServicesTableLib
   HiiLib
   MemoryAllocationLib
+  PcdLib
   PeCoffGetEntryPointLib
   UefiLib
   UefiBootServicesTableLib
@@ -62,6 +64,12 @@
 
 [Pcd]
   gRaspberryPiTokenSpaceGuid.PcdSystemTableMode
+  gBcm27xxTokenSpaceGuid.PcdBoardType                ## PRODUCES
+  gBcm27xxTokenSpaceGuid.PcdBcm2712Stepping          ## PRODUCES
+  gBcm27xxTokenSpaceGuid.PcdBoardHasWifi             ## PRODUCES
+
+[FixedPcd]
+  gArmPlatformTokenSpaceGuid.PL011UartInterrupt      ## CONSUMES
 
 [Depex]
   gEfiVariableArchProtocolGuid

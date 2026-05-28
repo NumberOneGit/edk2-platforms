@@ -30,3 +30,14 @@
   gBcm27xxTokenSpaceGuid.PcdBcm27xxPciCpuMmioAdr|0x0|UINT64|0x00000005
 
   gBcm27xxTokenSpaceGuid.PcdBcmGenetRegistersAddress|0x0|UINT64|0x00000006
+
+#
+# Runtime board / silicon identity, published by RpiPlatformDxe from the
+# board revision code (FDT-sourced lower 32 bits, plus optional mailbox
+# extended revision for WiFi presence). Consumers cross the Silicon/Platform
+# boundary via these PCDs rather than including BoardRevisionHelperLib.h.
+#
+[PcdsFixedAtBuild, PcdsPatchableInModule, PcdsDynamic, PcdsDynamicEx]
+  gBcm27xxTokenSpaceGuid.PcdBoardType|0x00|UINT8|0x00000010
+  gBcm27xxTokenSpaceGuid.PcdBcm2712Stepping|0x00|UINT8|0x00000011
+  gBcm27xxTokenSpaceGuid.PcdBoardHasWifi|TRUE|BOOLEAN|0x00000012

@@ -13,6 +13,7 @@
 #include <Library/DebugLib.h>
 #include <Library/DevicePathLib.h>
 #include <Library/HiiLib.h>
+#include <Library/PcdLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 
 #include "ConfigTable.h"
@@ -124,6 +125,28 @@ RpiPlatformDxeEntryPoint (
             __func__, Status));
     ASSERT (FALSE);
   }
+
+  //
+  // Publish board identity to Silicon-level consumers (pinctrl, GemDxe, ACPI
+  // fixups, ...). PcdBoardHasWifi stays at its default until the firmware
+  // protocol exposes an extended-revision (OTP) read; absence of evidence
+  // means "assume wifi present" so no hardware is silently disabled.
+  //
+  PcdSet8S (PcdBoardType,       BoardRevisionGetBoardType (mBoardRevisionCode));
+  PcdSet8S (PcdBcm2712Stepping, BoardRevisionGetStepping  (mBoardRevisionCode));
+
+  //
+  // Producer-side report: this is what RpiPlatformDxe just published. A
+  // consumer-side poll lives in any module that reads these PCDs (e.g.
+  // GemDxeEntryPoint) so cross-driver plumbing can be confirmed by diffing
+  // values in the serial log.
+  //
+  DEBUG ((DEBUG_INFO, "RpiBoardId: PcdBoardType = 0x%02x\n",
+          PcdGet8 (PcdBoardType)));
+  DEBUG ((DEBUG_INFO, "RpiBoardId: PcdBcm2712Stepping = %a\n",
+          (PcdGet8 (PcdBcm2712Stepping) == BCM2712_STEPPING_C1) ? "C1" : "D0"));
+  DEBUG ((DEBUG_INFO, "RpiBoardId: PcdBoardHasWifi (default until OTP wired) = %a\n",
+          PcdGetBool (PcdBoardHasWifi) ? "TRUE" : "FALSE"));
 
   mSystemMemorySize = BoardRevisionGetMemorySize (mBoardRevisionCode);
 

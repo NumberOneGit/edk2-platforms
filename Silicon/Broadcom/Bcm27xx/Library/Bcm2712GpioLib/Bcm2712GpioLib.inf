@@ -24,3 +24,7 @@
 [LibraryClasses]
   DebugLib
   IoLib
+  PcdLib
+
+[Pcd]
+  gBcm27xxTokenSpaceGuid.PcdBcm2712Stepping          ## CONSUMES
