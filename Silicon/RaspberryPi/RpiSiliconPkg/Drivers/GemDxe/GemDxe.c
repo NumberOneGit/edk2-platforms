@@ -8,15 +8,15 @@
 
 #include "GemDxe.h"
 
+#include <Guid/EventGroup.h>
 #include <Library/DebugLib.h>
 #include <Library/IoLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/PcdLib.h>
 #include <Library/TimerLib.h>
 #include <Library/UefiBootServicesTableLib.h>
-#include <Guid/EventGroup.h>
-#include <Protocol/RpiFirmware.h>
 #include <Protocol/Rp1Bus.h>
+#include <Protocol/RpiFirmware.h>
 #include <Rp1.h>
 #include <Rp1Gpio.h>
 #include <Rp1Mmio.h>
@@ -50,26 +50,14 @@ STATIC EFI_GUID mGemDxePrivateGuid = {
 
 #define GEM_RP1_AMP_MAX_PIPE 8
 
+#define GEM_RPI_BOARD_TYPE_PI5 0x17
+#define GEM_RPI_BOARD_TYPE_CM5 0x18
+#define GEM_RPI_BOARD_TYPE_PI500 0x19
+#define GEM_RPI_BOARD_TYPE_CM5_LITE 0x1A
+
 #define GEM_RP1_PHY_ADDR_DEFAULT 1
 #define GEM_RP1_PHY_ADDR_CM5 0
 #define GEM_RP1_PHY_IRQ_GPIO_CM5 37
-
-//
-// Compute Module 5 (board type 0x18) and CM5 Lite (0x1A) share the same RP1
-// GEM wiring: PHY at MDIO addr 0 and ETH_IRQ_N routed to RP1 GPIO37. All other
-// Pi 5 family boards (Pi 5 Model B 0x17, Pi 500 0x19) use PHY addr 1 and have
-// no IRQ wired. PcdBoardType is published by RpiPlatformDxe from the FDT-
-// sourced revision code.
-//
-STATIC
-BOOLEAN
-IsCm5FamilyBoard (
-  VOID
-  )
-{
-  UINT8 BoardType = PcdGet8 (PcdBoardType);
-  return (BoardType == 0x18) || (BoardType == 0x1A);
-}
 #define GEM_MDIO_TIMEOUT_US 1000000
 #define GEM_PHY_REG_BMCR 0
 #define GEM_PHY_REG_BMSR 1
@@ -99,14 +87,14 @@ IsCm5FamilyBoard (
 // eee-broken-1000t / eee-broken-100tx on the BCM54213PE; Linux's PHY core
 // honours those DT properties and clears the EEE advertisement.
 //
-#define GEM_PHY_REG_MMD_CTRL      13     // selects MMD device + op
-#define GEM_PHY_REG_MMD_DATA      14     // data register for the selected MMD reg
-#define GEM_MMD_CTRL_OP_ADDR      0x0000 // function code 0: address mode
-#define GEM_MMD_CTRL_OP_DATA      0x4000 // function code 1: data, no post-incr
-#define GEM_MMD_DEV_AN            7      // MMD device 7 = Auto-Negotiation
-#define GEM_MMD_AN_EEE_ADV        60     // MMD7 reg 60 = EEE advertisement
-#define GEM_EEE_ADV_100TX         BIT1   // 100BASE-TX EEE advertisement bit
-#define GEM_EEE_ADV_1000T         BIT2   // 1000BASE-T EEE advertisement bit
+#define GEM_PHY_REG_MMD_CTRL 13     // selects MMD device + op
+#define GEM_PHY_REG_MMD_DATA 14     // data register for the selected MMD reg
+#define GEM_MMD_CTRL_OP_ADDR 0x0000 // function code 0: address mode
+#define GEM_MMD_CTRL_OP_DATA 0x4000 // function code 1: data, no post-incr
+#define GEM_MMD_DEV_AN 7            // MMD device 7 = Auto-Negotiation
+#define GEM_MMD_AN_EEE_ADV 60       // MMD7 reg 60 = EEE advertisement
+#define GEM_EEE_ADV_100TX BIT1      // 100BASE-TX EEE advertisement bit
+#define GEM_EEE_ADV_1000T BIT2      // 1000BASE-T EEE advertisement bit
 #define GEM_PHY_AUTONEG_TIMEOUT_US 5000000
 #define GEM_PHY_AUTONEG_POLL_US 100000
 #define GEM_RP1_PHY_RESET_GPIO 32
@@ -124,11 +112,10 @@ IsCm5FamilyBoard (
 #define GEM_TX_MAX_FRAME_SIZE 1536
 #define GEM_DMA_DESC_TX_LENGTH_MASK 0x00003FFFu
 #define GEM_TSR_COMP BIT5
-#define GEM_DMACFG_RP1_RX_BUFFER_SIZE_VALUE                               \
-  (GEM_DMA_RX_BUFFER_SIZE / 64)
+#define GEM_DMACFG_RP1_RX_BUFFER_SIZE_VALUE (GEM_DMA_RX_BUFFER_SIZE / 64)
 #define GEM_DMACFG_RP1_BURST_LENGTH 16
 #define GEM_INTERRUPT_DISABLE_ALL 0x3FFFFFFF
-#define GEM_SNP_RX_FILTER_MASK                                                \
+#define GEM_SNP_RX_FILTER_MASK                                                 \
   (EFI_SIMPLE_NETWORK_RECEIVE_UNICAST | EFI_SIMPLE_NETWORK_RECEIVE_MULTICAST | \
    EFI_SIMPLE_NETWORK_RECEIVE_BROADCAST |                                      \
    EFI_SIMPLE_NETWORK_RECEIVE_PROMISCUOUS |                                    \
@@ -226,9 +213,8 @@ GemMmioClearBits(IN GEM_DXE_PRIVATE_DATA *Private, IN UINT32 Offset,
 // observed to stall on RP1 without it; we apply it at all doorbell,
 // queue-base, and enable/disable sites for the same reason.
 //
-VOID
-GemPciePostedWriteFlush(IN GEM_DXE_PRIVATE_DATA *Private) {
-  (VOID)MmioRead32(Private->GemBase + GEM_NCR);
+VOID GemPciePostedWriteFlush(IN GEM_DXE_PRIVATE_DATA *Private) {
+  (VOID) MmioRead32(Private->GemBase + GEM_NCR);
 }
 
 STATIC
@@ -282,8 +268,7 @@ FreeBuffer:
 }
 
 STATIC
-VOID
-GemZeroAllocation(IN GEM_DMA_ALLOCATION *Allocation) {
+VOID GemZeroAllocation(IN GEM_DMA_ALLOCATION *Allocation) {
   Allocation->HostAddress = NULL;
   Allocation->Mapping = NULL;
   Allocation->DeviceAddress = 0;
@@ -302,8 +287,7 @@ GemDmaAllocateAndMap(IN GEM_DXE_PRIVATE_DATA *Private, IN UINTN Pages,
   Allocation->NumberOfBytes = EFI_PAGES_TO_SIZE(Pages);
 
   Status = Private->Rp1Bus->DmaAllocateBuffer(
-      Private->Rp1Bus, EfiBootServicesData, Pages, &Allocation->HostAddress,
-      0);
+      Private->Rp1Bus, EfiBootServicesData, Pages, &Allocation->HostAddress, 0);
   if (EFI_ERROR(Status)) {
     DEBUG((DEBUG_ERROR, "GEM: DMA AllocateBuffer(%u pages) failed. Status=%r\n",
            (UINT32)Pages, Status));
@@ -326,9 +310,8 @@ GemDmaAllocateAndMap(IN GEM_DXE_PRIVATE_DATA *Private, IN UINTN Pages,
 }
 
 STATIC
-VOID
-GemDmaUnmapAndFree(IN GEM_DXE_PRIVATE_DATA *Private,
-                   IN GEM_DMA_ALLOCATION *Allocation) {
+VOID GemDmaUnmapAndFree(IN GEM_DXE_PRIVATE_DATA *Private,
+                        IN GEM_DMA_ALLOCATION *Allocation) {
   if (Allocation->Mapping != NULL) {
     Private->Rp1Bus->DmaUnmap(Private->Rp1Bus, Allocation->Mapping);
   }
@@ -348,8 +331,7 @@ GemDmaAddressFits32(IN EFI_PHYSICAL_ADDRESS DeviceAddress) {
 }
 
 STATIC
-VOID
-GemConfigureDmaForBasicDescriptors(IN GEM_DXE_PRIVATE_DATA *Private) {
+VOID GemConfigureDmaForBasicDescriptors(IN GEM_DXE_PRIVATE_DATA *Private) {
   UINT32 DmaCfg;
   UINT32 NewDmaCfg;
 
@@ -362,16 +344,15 @@ GemConfigureDmaForBasicDescriptors(IN GEM_DXE_PRIVATE_DATA *Private) {
                << GEM_DMACFG_RXBS_OFFSET;
   NewDmaCfg |= (GEM_DMACFG_RP1_BURST_LENGTH & GEM_DMACFG_FBLDO_MASK)
                << GEM_DMACFG_FBLDO_OFFSET;
-  NewDmaCfg |= GEM_DMACFG_TXPBMS |
-               (GEM_DMACFG_RXBMS_MASK << GEM_DMACFG_RXBMS_OFFSET);
+  NewDmaCfg |=
+      GEM_DMACFG_TXPBMS | (GEM_DMACFG_RXBMS_MASK << GEM_DMACFG_RXBMS_OFFSET);
 
   GemMmioWrite(Private, GEM_DMACFG, NewDmaCfg);
   GemPciePostedWriteFlush(Private);
 }
 
 STATIC
-VOID
-GemReleaseDmaRings(IN GEM_DXE_PRIVATE_DATA *Private) {
+VOID GemReleaseDmaRings(IN GEM_DXE_PRIVATE_DATA *Private) {
   UINTN Index;
 
   if (Private == NULL) {
@@ -517,8 +498,8 @@ GemTransmitFrameSync(IN GEM_DXE_PRIVATE_DATA *Private,
   Wrap = Ctrl & GEM_DMA_DESC_TX_WRAP;
   Private->TxDesc[DescIndex].Addr = (UINT32)DeviceAddress;
   Private->TxDesc[DescIndex].Ctrl =
-      Wrap | GEM_DMA_DESC_TX_LAST | ((UINT32)FrameLength &
-                                      GEM_DMA_DESC_TX_LENGTH_MASK);
+      Wrap | GEM_DMA_DESC_TX_LAST |
+      ((UINT32)FrameLength & GEM_DMA_DESC_TX_LENGTH_MASK);
   MemoryFence();
 
   GemMmioWrite(Private, GEM_TSR, 0xFFFFFFFF);
@@ -552,8 +533,7 @@ GemTransmitFrameSync(IN GEM_DXE_PRIVATE_DATA *Private,
 }
 
 STATIC
-VOID
-GemApplyRp1AxiPipelineConfig(IN GEM_DXE_PRIVATE_DATA *Private);
+VOID GemApplyRp1AxiPipelineConfig(IN GEM_DXE_PRIVATE_DATA *Private);
 
 STATIC
 EFI_STATUS
@@ -565,8 +545,7 @@ EFI_STATUS
 GemInitializeDmaRings(IN GEM_DXE_PRIVATE_DATA *Private);
 
 STATIC
-VOID
-GemReleaseDmaRings(IN GEM_DXE_PRIVATE_DATA *Private);
+VOID GemReleaseDmaRings(IN GEM_DXE_PRIVATE_DATA *Private);
 
 STATIC
 EFI_STATUS
@@ -824,23 +803,31 @@ GemDisableEeeAdv(IN GEM_DXE_PRIVATE_DATA *Private, IN UINT8 PhyAddr) {
   //
   // Step 1: select MMD7 in address mode.
   //
-  Status = GemMdioWriteClause22(Private, PhyAddr, GEM_PHY_REG_MMD_CTRL,
-                                (UINT16)(GEM_MMD_CTRL_OP_ADDR | GEM_MMD_DEV_AN));
-  if (EFI_ERROR(Status)) { return Status; }
+  Status =
+      GemMdioWriteClause22(Private, PhyAddr, GEM_PHY_REG_MMD_CTRL,
+                           (UINT16)(GEM_MMD_CTRL_OP_ADDR | GEM_MMD_DEV_AN));
+  if (EFI_ERROR(Status)) {
+    return Status;
+  }
 
   //
   // Step 2: write the MMD7 register address (60 = EEE_ADV).
   //
   Status = GemMdioWriteClause22(Private, PhyAddr, GEM_PHY_REG_MMD_DATA,
                                 GEM_MMD_AN_EEE_ADV);
-  if (EFI_ERROR(Status)) { return Status; }
+  if (EFI_ERROR(Status)) {
+    return Status;
+  }
 
   //
   // Step 3: switch to data mode (still MMD7).
   //
-  Status = GemMdioWriteClause22(Private, PhyAddr, GEM_PHY_REG_MMD_CTRL,
-                                (UINT16)(GEM_MMD_CTRL_OP_DATA | GEM_MMD_DEV_AN));
-  if (EFI_ERROR(Status)) { return Status; }
+  Status =
+      GemMdioWriteClause22(Private, PhyAddr, GEM_PHY_REG_MMD_CTRL,
+                           (UINT16)(GEM_MMD_CTRL_OP_DATA | GEM_MMD_DEV_AN));
+  if (EFI_ERROR(Status)) {
+    return Status;
+  }
 
   //
   // Step 4: write 0 to EEE_ADV. BCM54213PE boots with bits 1+2 (100TX,
@@ -871,17 +858,16 @@ GemRestartAutonegIfNeeded(IN GEM_DXE_PRIVATE_DATA *Private, IN UINT8 PhyAddr,
   DEBUG((DEBUG_INFO,
          "GEM: PHY link/autoneg not ready; restarting autonegotiation\n"));
 
-  Status = GemMdioWriteClause22(Private, PhyAddr, GEM_PHY_REG_ADVERTISE,
-                                Advertise);
+  Status =
+      GemMdioWriteClause22(Private, PhyAddr, GEM_PHY_REG_ADVERTISE, Advertise);
   if (EFI_ERROR(Status)) {
-    DEBUG((DEBUG_ERROR, "GEM: MDIO advertise write failed. Status=%r\n",
-           Status));
+    DEBUG(
+        (DEBUG_ERROR, "GEM: MDIO advertise write failed. Status=%r\n", Status));
     return Status;
   }
 
   Status = GemMdioWriteClause22(Private, PhyAddr, GEM_PHY_REG_BMCR,
-                                GEM_PHY_BMCR_ANENABLE |
-                                    GEM_PHY_BMCR_ANRESTART);
+                                GEM_PHY_BMCR_ANENABLE | GEM_PHY_BMCR_ANRESTART);
   if (EFI_ERROR(Status)) {
     DEBUG((DEBUG_ERROR, "GEM: MDIO BMCR autoneg restart failed. Status=%r\n",
            Status));
@@ -892,8 +878,8 @@ GemRestartAutonegIfNeeded(IN GEM_DXE_PRIVATE_DATA *Private, IN UINT8 PhyAddr,
        ElapsedUs += GEM_PHY_AUTONEG_POLL_US) {
     MicroSecondDelay(GEM_PHY_AUTONEG_POLL_US);
 
-    Status = GemMdioReadClause22Quiet(Private, PhyAddr, GEM_PHY_REG_BMSR,
-                                      &Bmsr);
+    Status =
+        GemMdioReadClause22Quiet(Private, PhyAddr, GEM_PHY_REG_BMSR, &Bmsr);
     if (EFI_ERROR(Status)) {
       return Status;
     }
@@ -914,21 +900,22 @@ GemRestartAutonegIfNeeded(IN GEM_DXE_PRIVATE_DATA *Private, IN UINT8 PhyAddr,
 STATIC
 UINT8
 GemGetRp1PhyAddress(VOID) {
-  UINT8 PhyAddr = IsCm5FamilyBoard()
-                  ? GEM_RP1_PHY_ADDR_CM5
-                  : GEM_RP1_PHY_ADDR_DEFAULT;
-  DEBUG((DEBUG_INFO,
-         "GEM: PcdBoardType=0x%02x -> PHY addr %u\n",
-         PcdGet8(PcdBoardType), PhyAddr));
+  UINT8 BoardType = PcdGet8(PcdBoardType);
+  // CM5 (0x18) and CM5 Lite (0x1A) use PHY address 0; everything else uses 1.
+  UINT8 PhyAddr = ((BoardType == GEM_RPI_BOARD_TYPE_CM5) ||
+                   (BoardType == GEM_RPI_BOARD_TYPE_CM5_LITE))
+                      ? GEM_RP1_PHY_ADDR_CM5
+                      : GEM_RP1_PHY_ADDR_DEFAULT;
+  DEBUG((DEBUG_INFO, "GEM: PcdBoardType=0x%02x -> PHY addr %u\n", BoardType,
+         PhyAddr));
   return PhyAddr;
 }
 
 STATIC
-VOID
-GemDebugPrintRp1GpioState(IN CONST CHAR8 *Label, IN CONST RP1_GPIO_PIN *Pin) {
-  DEBUG((DEBUG_INFO,
-         "GEM: %a GPIO%u CTRL=0x%08x PAD=0x%08x RIO_IN=0x%08x\n", Label,
-         GEM_RP1_PHY_IRQ_GPIO_CM5, Rp1GpioReadCtrl(Pin),
+VOID GemDebugPrintRp1GpioState(IN CONST CHAR8 *Label,
+                               IN CONST RP1_GPIO_PIN *Pin) {
+  DEBUG((DEBUG_INFO, "GEM: %a GPIO%u CTRL=0x%08x PAD=0x%08x RIO_IN=0x%08x\n",
+         Label, GEM_RP1_PHY_IRQ_GPIO_CM5, Rp1GpioReadCtrl(Pin),
          Rp1MmioRead32(Rp1GpioPadAddr(Pin)),
          Rp1MmioRead32(Rp1GpioRioAddr(Pin, RP1_RIO_IN))));
 }
@@ -938,16 +925,18 @@ EFI_STATUS
 GemConfigureRp1PhyIrqGpio(IN GEM_DXE_PRIVATE_DATA *Private) {
   EFI_STATUS Status;
   RP1_GPIO_PIN Pin;
-
-  if (!IsCm5FamilyBoard()) {
+  UINT8 BoardType = PcdGet8(PcdBoardType);
+  // Only CM5 (0x18) and CM5 Lite (0x1A) wire ETH_IRQ_N to RP1 GPIO37.
+  if ((BoardType != GEM_RPI_BOARD_TYPE_CM5) &&
+      (BoardType != GEM_RPI_BOARD_TYPE_CM5_LITE)) {
     return EFI_SUCCESS;
   }
 
-  Status = Rp1GpioGetPin(Private->PeripheralBase, GEM_RP1_PHY_IRQ_GPIO_CM5,
-                         &Pin);
+  Status =
+      Rp1GpioGetPin(Private->PeripheralBase, GEM_RP1_PHY_IRQ_GPIO_CM5, &Pin);
   if (EFI_ERROR(Status)) {
-    DEBUG((DEBUG_ERROR, "GEM: Failed to resolve CM5 ETH_IRQ_N GPIO37. Status=%r\n",
-           Status));
+    DEBUG((DEBUG_ERROR,
+           "GEM: Failed to resolve CM5 ETH_IRQ_N GPIO37. Status=%r\n", Status));
     return Status;
   }
 
@@ -961,8 +950,7 @@ GemConfigureRp1PhyIrqGpio(IN GEM_DXE_PRIVATE_DATA *Private) {
   Rp1GpioConfigureInput(&Pin);
 
   GemDebugPrintRp1GpioState("ETH_IRQ_N after ", &Pin);
-  DEBUG((DEBUG_INFO,
-         "GEM: CM5 ETH_IRQ_N level is %a; polling MDIO for now\n",
+  DEBUG((DEBUG_INFO, "GEM: CM5 ETH_IRQ_N level is %a; polling MDIO for now\n",
          Rp1GpioRead(&Pin) ? "high/inactive" : "low/asserted"));
 
   return EFI_SUCCESS;
@@ -1066,8 +1054,8 @@ GemProbeMdio(IN GEM_DXE_PRIVATE_DATA *Private, OUT UINT32 *NcfgrSpeedBits,
     return Status;
   }
 
-  Status = GemMdioReadClause22(Private, PhyAddr, GEM_PHY_REG_BMSR,
-                               &BmsrLatched);
+  Status =
+      GemMdioReadClause22(Private, PhyAddr, GEM_PHY_REG_BMSR, &BmsrLatched);
   if (EFI_ERROR(Status)) {
     DEBUG((DEBUG_ERROR, "GEM: MDIO BMSR read failed. Status=%r\n", Status));
     return Status;
@@ -1109,8 +1097,8 @@ GemProbeMdio(IN GEM_DXE_PRIVATE_DATA *Private, OUT UINT32 *NcfgrSpeedBits,
            Status));
   }
 
-  Status = GemMdioReadClause22(Private, PhyAddr, GEM_PHY_REG_BMSR,
-                               &BmsrLatched);
+  Status =
+      GemMdioReadClause22(Private, PhyAddr, GEM_PHY_REG_BMSR, &BmsrLatched);
   if (EFI_ERROR(Status)) {
     DEBUG((DEBUG_ERROR, "GEM: MDIO post-autoneg BMSR read failed. Status=%r\n",
            Status));
@@ -1124,14 +1112,14 @@ GemProbeMdio(IN GEM_DXE_PRIVATE_DATA *Private, OUT UINT32 *NcfgrSpeedBits,
     return Status;
   }
 
-  DEBUG((DEBUG_INFO, "GEM: MDIO post-autoneg BMSR=0x%04x/0x%04x\n",
-         BmsrLatched, Bmsr));
+  DEBUG((DEBUG_INFO, "GEM: MDIO post-autoneg BMSR=0x%04x/0x%04x\n", BmsrLatched,
+         Bmsr));
 
-  Status = GemMdioReadClause22(Private, PhyAddr, GEM_PHY_REG_ADVERTISE,
-                               &Advertise);
+  Status =
+      GemMdioReadClause22(Private, PhyAddr, GEM_PHY_REG_ADVERTISE, &Advertise);
   if (EFI_ERROR(Status)) {
-    DEBUG((DEBUG_ERROR, "GEM: MDIO advertise read failed. Status=%r\n",
-           Status));
+    DEBUG(
+        (DEBUG_ERROR, "GEM: MDIO advertise read failed. Status=%r\n", Status));
     return Status;
   }
 
@@ -1141,16 +1129,16 @@ GemProbeMdio(IN GEM_DXE_PRIVATE_DATA *Private, OUT UINT32 *NcfgrSpeedBits,
     return Status;
   }
 
-  Status = GemMdioReadClause22(Private, PhyAddr, GEM_PHY_REG_STAT1000,
-                               &Stat1000);
+  Status =
+      GemMdioReadClause22(Private, PhyAddr, GEM_PHY_REG_STAT1000, &Stat1000);
   if (EFI_ERROR(Status)) {
     DEBUG((DEBUG_ERROR, "GEM: MDIO 1000BASE-T status read failed. Status=%r\n",
            Status));
     return Status;
   }
 
-  *LinkConfigValid = GemLogPhyLink(Bmsr, Advertise, Lpa, Stat1000,
-                                   NcfgrSpeedBits);
+  *LinkConfigValid =
+      GemLogPhyLink(Bmsr, Advertise, Lpa, Stat1000, NcfgrSpeedBits);
 
   return EFI_SUCCESS;
 }
@@ -1168,8 +1156,8 @@ GemResetRp1Phy(IN GEM_DXE_PRIVATE_DATA *Private) {
     return Status;
   }
 
-  DEBUG((DEBUG_INFO,
-         "GEM: Resetting PHY via RP1 GPIO32 ETH_RST_N active-low\n"));
+  DEBUG(
+      (DEBUG_INFO, "GEM: Resetting PHY via RP1 GPIO32 ETH_RST_N active-low\n"));
 
   Rp1GpioConfigureOutput(&Pin, FALSE);
   MicroSecondDelay(GEM_RP1_PHY_RESET_ASSERT_MS * 1000);
@@ -1182,8 +1170,7 @@ GemResetRp1Phy(IN GEM_DXE_PRIVATE_DATA *Private) {
 }
 
 STATIC
-VOID
-GemApplyRp1AxiPipelineConfig(IN GEM_DXE_PRIVATE_DATA *Private) {
+VOID GemApplyRp1AxiPipelineConfig(IN GEM_DXE_PRIVATE_DATA *Private) {
   UINT32 Amp;
   UINT32 ExpectedAmp;
 
@@ -1227,16 +1214,14 @@ GemIsZeroMac(IN CONST EFI_MAC_ADDRESS *Address) {
 }
 
 STATIC
-VOID
-GemProgramMacAddress(IN GEM_DXE_PRIVATE_DATA *Private,
-                     IN CONST EFI_MAC_ADDRESS *Address) {
+VOID GemProgramMacAddress(IN GEM_DXE_PRIVATE_DATA *Private,
+                          IN CONST EFI_MAC_ADDRESS *Address) {
   UINT32 SaBottom;
   UINT32 SaTop;
 
   SaBottom = ((UINT32)Address->Addr[3] << 24) |
              ((UINT32)Address->Addr[2] << 16) |
-             ((UINT32)Address->Addr[1] << 8) |
-             (UINT32)Address->Addr[0];
+             ((UINT32)Address->Addr[1] << 8) | (UINT32)Address->Addr[0];
   SaTop = ((UINT32)Address->Addr[5] << 8) | (UINT32)Address->Addr[4];
 
   GemMmioWrite(Private, GEM_SA1B, SaBottom);
@@ -1244,8 +1229,7 @@ GemProgramMacAddress(IN GEM_DXE_PRIVATE_DATA *Private,
 }
 
 STATIC
-VOID
-GemLoadStationAddress(IN GEM_DXE_PRIVATE_DATA *Private) {
+VOID GemLoadStationAddress(IN GEM_DXE_PRIVATE_DATA *Private) {
   EFI_STATUS Status;
   RASPBERRY_PI_FIRMWARE_PROTOCOL *Firmware;
   EFI_MAC_ADDRESS Address;
@@ -1307,8 +1291,7 @@ GemBuildSnpDevicePath(IN GEM_DXE_PRIVATE_DATA *Private) {
   DevicePath->Mac.Header.Type = MESSAGING_DEVICE_PATH;
   DevicePath->Mac.Header.SubType = MSG_MAC_ADDR_DP;
   DevicePath->Mac.Header.Length[0] = (UINT8)(sizeof(MAC_ADDR_DEVICE_PATH));
-  DevicePath->Mac.Header.Length[1] =
-      (UINT8)(sizeof(MAC_ADDR_DEVICE_PATH) >> 8);
+  DevicePath->Mac.Header.Length[1] = (UINT8)(sizeof(MAC_ADDR_DEVICE_PATH) >> 8);
   CopyMem(&DevicePath->Mac.MacAddress, &Private->SnpMode.CurrentAddress,
           sizeof(EFI_MAC_ADDRESS));
   DevicePath->Mac.IfType = GEM_ETHERNET_IFTYPE;
@@ -1316,8 +1299,7 @@ GemBuildSnpDevicePath(IN GEM_DXE_PRIVATE_DATA *Private) {
   DevicePath->End.Type = END_DEVICE_PATH_TYPE;
   DevicePath->End.SubType = END_ENTIRE_DEVICE_PATH_SUBTYPE;
   DevicePath->End.Length[0] = (UINT8)(sizeof(EFI_DEVICE_PATH_PROTOCOL));
-  DevicePath->End.Length[1] =
-      (UINT8)(sizeof(EFI_DEVICE_PATH_PROTOCOL) >> 8);
+  DevicePath->End.Length[1] = (UINT8)(sizeof(EFI_DEVICE_PATH_PROTOCOL) >> 8);
 
   Private->SnpDevicePath = DevicePath;
   return EFI_SUCCESS;
@@ -1346,8 +1328,7 @@ GemSnpCheckState(IN EFI_SIMPLE_NETWORK_PROTOCOL *This,
 }
 
 STATIC
-VOID
-GemRecycleRxDescriptor(IN GEM_DXE_PRIVATE_DATA *Private, IN UINTN Index) {
+VOID GemRecycleRxDescriptor(IN GEM_DXE_PRIVATE_DATA *Private, IN UINTN Index) {
   Private->RxDesc[Index].Ctrl = 0;
   Private->RxDesc[Index].Addr =
       ((UINT32)Private->RxBuffers[Index].DeviceAddress &
@@ -1360,8 +1341,7 @@ GemRecycleRxDescriptor(IN GEM_DXE_PRIVATE_DATA *Private, IN UINTN Index) {
 }
 
 STATIC
-VOID
-GemApplyReceiveFilters(IN GEM_DXE_PRIVATE_DATA *Private) {
+VOID GemApplyReceiveFilters(IN GEM_DXE_PRIVATE_DATA *Private) {
   UINT32 Filters;
   UINT32 Ncfgr;
 
@@ -1601,8 +1581,8 @@ GemSnpStationAddress(IN EFI_SIMPLE_NETWORK_PROTOCOL *This, IN BOOLEAN Reset,
   }
 
   if (Reset) {
-    CopyMem(&Private->SnpMode.CurrentAddress, &Private->SnpMode.PermanentAddress,
-            sizeof(EFI_MAC_ADDRESS));
+    CopyMem(&Private->SnpMode.CurrentAddress,
+            &Private->SnpMode.PermanentAddress, sizeof(EFI_MAC_ADDRESS));
   } else if (New != NULL) {
     CopyMem(&Private->SnpMode.CurrentAddress, New, sizeof(EFI_MAC_ADDRESS));
   } else {
@@ -1718,8 +1698,8 @@ GemSnpGetStatus(IN EFI_SIMPLE_NETWORK_PROTOCOL *This,
     if ((Isr & GEM_ISR_TCOMP) != 0) {
       *IrqStat |= EFI_SIMPLE_NETWORK_TRANSMIT_INTERRUPT;
     }
-    if ((Isr & (GEM_ISR_TXERR | GEM_ISR_HRESP | GEM_ISR_ROVR |
-                GEM_ISR_RXUBR | GEM_ISR_TXUBR | GEM_ISR_TUND)) != 0) {
+    if ((Isr & (GEM_ISR_TXERR | GEM_ISR_HRESP | GEM_ISR_ROVR | GEM_ISR_RXUBR |
+                GEM_ISR_TXUBR | GEM_ISR_TUND)) != 0) {
       *IrqStat |= EFI_SIMPLE_NETWORK_COMMAND_INTERRUPT;
     }
   }
@@ -1808,9 +1788,9 @@ GemSnpTransmit(IN EFI_SIMPLE_NETWORK_PROTOCOL *This, IN UINTN HeaderSize,
     DeviceAddress = PaddedTx.DeviceAddress;
   } else {
     MapLength = BufferSize;
-    Status = Private->Rp1Bus->DmaMap(
-        Private->Rp1Bus, EfiPciIoOperationBusMasterRead, Buffer, &MapLength,
-        &DeviceAddress, &Mapping);
+    Status =
+        Private->Rp1Bus->DmaMap(Private->Rp1Bus, EfiPciIoOperationBusMasterRead,
+                                Buffer, &MapLength, &DeviceAddress, &Mapping);
     if (EFI_ERROR(Status)) {
       return Status;
     }
@@ -1818,8 +1798,8 @@ GemSnpTransmit(IN EFI_SIMPLE_NETWORK_PROTOCOL *This, IN UINTN HeaderSize,
     FrameLength = MapLength;
   }
 
-  Frame = (FrameLength != BufferSize) ? (UINT8 *)PaddedTx.HostAddress :
-                                        (UINT8 *)Buffer;
+  Frame = (FrameLength != BufferSize) ? (UINT8 *)PaddedTx.HostAddress
+                                      : (UINT8 *)Buffer;
   EtherType = 0;
   if (BufferSize >= GEM_ETHERNET_HEADER_SIZE) {
     EtherType = (UINT16)((Frame[12] << 8) | Frame[13]);
@@ -1830,8 +1810,8 @@ GemSnpTransmit(IN EFI_SIMPLE_NETWORK_PROTOCOL *This, IN UINTN HeaderSize,
   if (EFI_ERROR(Status)) {
     DEBUG((DEBUG_WARN,
            "GEM: TX failed len=%u et=0x%04x st=%r TSR=0x%08x ISR=0x%08x\n",
-           (UINT32)BufferSize, EtherType, Status,
-           GemMmioRead(Private, GEM_TSR), GemMmioRead(Private, GEM_ISR)));
+           (UINT32)BufferSize, EtherType, Status, GemMmioRead(Private, GEM_TSR),
+           GemMmioRead(Private, GEM_ISR)));
   }
 
   if (Mapping != NULL) {
@@ -1945,8 +1925,7 @@ GemSnpReceive(IN EFI_SIMPLE_NETWORK_PROTOCOL *This,
 }
 
 STATIC
-VOID
-GemInitializeSnp(IN GEM_DXE_PRIVATE_DATA *Private) {
+VOID GemInitializeSnp(IN GEM_DXE_PRIVATE_DATA *Private) {
   EFI_SIMPLE_NETWORK_PROTOCOL *Snp;
   EFI_SIMPLE_NETWORK_MODE *Mode;
 
@@ -1977,10 +1956,9 @@ GemInitializeSnp(IN GEM_DXE_PRIVATE_DATA *Private) {
   Mode->NvRamSize = 0;
   Mode->NvRamAccessSize = 0;
   Mode->ReceiveFilterMask = GEM_SNP_RX_FILTER_MASK;
-  Mode->ReceiveFilterSetting =
-      EFI_SIMPLE_NETWORK_RECEIVE_UNICAST |
-      EFI_SIMPLE_NETWORK_RECEIVE_MULTICAST |
-      EFI_SIMPLE_NETWORK_RECEIVE_BROADCAST;
+  Mode->ReceiveFilterSetting = EFI_SIMPLE_NETWORK_RECEIVE_UNICAST |
+                               EFI_SIMPLE_NETWORK_RECEIVE_MULTICAST |
+                               EFI_SIMPLE_NETWORK_RECEIVE_BROADCAST;
   Mode->MaxMCastFilterCount = GEM_SNP_MAX_MCAST_FILTER_COUNT;
   Mode->MCastFilterCount = 0;
   Mode->IfType = GEM_ETHERNET_IFTYPE;
@@ -1994,8 +1972,7 @@ GemInitializeSnp(IN GEM_DXE_PRIVATE_DATA *Private) {
 }
 
 STATIC
-VOID
-GemFreeSnpDevicePath(IN GEM_DXE_PRIVATE_DATA *Private) {
+VOID GemFreeSnpDevicePath(IN GEM_DXE_PRIVATE_DATA *Private) {
   if (Private->SnpDevicePath != NULL) {
     FreePool(Private->SnpDevicePath);
     Private->SnpDevicePath = NULL;
@@ -2016,9 +1993,8 @@ GemFreeSnpDevicePath(IN GEM_DXE_PRIVATE_DATA *Private) {
 // Windows into a cold-bring-up path it does not currently implement.
 //
 STATIC
-VOID
-EFIAPI
-GemDxeExitBootServicesHandler(IN EFI_EVENT Event, IN VOID *Context) {
+VOID EFIAPI GemDxeExitBootServicesHandler(IN EFI_EVENT Event,
+                                          IN VOID *Context) {
   GEM_DXE_PRIVATE_DATA *Private = (GEM_DXE_PRIVATE_DATA *)Context;
 
   if (Private == NULL) {
@@ -2169,9 +2145,8 @@ GemDxeDriverBindingStart(IN EFI_DRIVER_BINDING_PROTOCOL *This,
     goto Fail;
   }
 
-  Status = gBS->InstallMultipleProtocolInterfaces(&ControllerHandle,
-                                                  &mGemDxePrivateGuid, Private,
-                                                  NULL);
+  Status = gBS->InstallMultipleProtocolInterfaces(
+      &ControllerHandle, &mGemDxePrivateGuid, Private, NULL);
   if (EFI_ERROR(Status)) {
     DEBUG((DEBUG_ERROR, "GEM: Failed to install private protocol. Status=%r\n",
            Status));
@@ -2180,15 +2155,12 @@ GemDxeDriverBindingStart(IN EFI_DRIVER_BINDING_PROTOCOL *This,
   PrivateInstalled = TRUE;
 
   Private->SnpHandle = NULL;
-  Status = gBS->InstallMultipleProtocolInterfaces(&Private->SnpHandle,
-                                                  &gEfiDevicePathProtocolGuid,
-                                                  Private->SnpDevicePath,
-                                                  &gEfiSimpleNetworkProtocolGuid,
-                                                  &Private->Snp,
-                                                  NULL);
+  Status = gBS->InstallMultipleProtocolInterfaces(
+      &Private->SnpHandle, &gEfiDevicePathProtocolGuid, Private->SnpDevicePath,
+      &gEfiSimpleNetworkProtocolGuid, &Private->Snp, NULL);
   if (EFI_ERROR(Status)) {
-    DEBUG((DEBUG_ERROR, "GEM: Failed to install SNP child protocols. Status=%r\n",
-           Status));
+    DEBUG((DEBUG_ERROR,
+           "GEM: Failed to install SNP child protocols. Status=%r\n", Status));
     goto Fail;
   }
   SnpInstalled = TRUE;
@@ -2239,14 +2211,13 @@ Fail:
     if (SnpInstalled) {
       gBS->UninstallMultipleProtocolInterfaces(
           Private->SnpHandle, &gEfiDevicePathProtocolGuid,
-          Private->SnpDevicePath, &gEfiSimpleNetworkProtocolGuid,
-          &Private->Snp, NULL);
+          Private->SnpDevicePath, &gEfiSimpleNetworkProtocolGuid, &Private->Snp,
+          NULL);
     }
 
     if (PrivateInstalled) {
-      gBS->UninstallMultipleProtocolInterfaces(ControllerHandle,
-                                               &mGemDxePrivateGuid, Private,
-                                               NULL);
+      gBS->UninstallMultipleProtocolInterfaces(
+          ControllerHandle, &mGemDxePrivateGuid, Private, NULL);
     }
 
     GemFreeSnpDevicePath(Private);
@@ -2311,17 +2282,17 @@ GemDxeDriverBindingStop(IN EFI_DRIVER_BINDING_PROTOCOL *This,
     }
 
     if (Private->SnpHandle != NULL) {
-      Status = gBS->CloseProtocol(ControllerHandle, &gRp1BusProtocolGuid,
-                                  This->DriverBindingHandle,
-                                  Private->SnpHandle);
+      Status =
+          gBS->CloseProtocol(ControllerHandle, &gRp1BusProtocolGuid,
+                             This->DriverBindingHandle, Private->SnpHandle);
       if (EFI_ERROR(Status)) {
         return Status;
       }
 
       Status = gBS->UninstallMultipleProtocolInterfaces(
           Private->SnpHandle, &gEfiDevicePathProtocolGuid,
-          Private->SnpDevicePath, &gEfiSimpleNetworkProtocolGuid,
-          &Private->Snp, NULL);
+          Private->SnpDevicePath, &gEfiSimpleNetworkProtocolGuid, &Private->Snp,
+          NULL);
       if (EFI_ERROR(Status)) {
         gBS->OpenProtocol(ControllerHandle, &gRp1BusProtocolGuid,
                           (VOID **)&Rp1Bus, This->DriverBindingHandle,
@@ -2371,15 +2342,6 @@ GemDxeEntryPoint(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable) {
   EFI_STATUS Status;
 
   DEBUG((DEBUG_INFO, "GEM: Driver entry point\n"));
-
-  //
-  // Consumer-side PCD poll: reads PcdBoardType (the only board-identity PCD
-  // GemDxe consumes) from a separate driver to confirm cross-module PCD
-  // plumbing. Pair with the "RpiBoardId:" producer-side line.
-  //
-  DEBUG((DEBUG_INFO,
-         "GEM: PCD poll -> PcdBoardType=0x%02x\n",
-         PcdGet8(PcdBoardType)));
 
   mGemDxeDriverBinding.ImageHandle = ImageHandle;
   mGemDxeDriverBinding.DriverBindingHandle = ImageHandle;

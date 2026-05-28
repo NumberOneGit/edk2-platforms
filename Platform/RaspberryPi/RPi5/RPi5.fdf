@@ -300,6 +300,11 @@ READ_LOCK_STATUS   = TRUE
   INF Silicon/RaspberryPi/RpiSiliconPkg/Drivers/Rp1BusDxe/Rp1BusDxe.inf
 
   #
+  # GEM Ethernet (RP1)
+  #
+  INF Silicon/RaspberryPi/RpiSiliconPkg/Drivers/GemDxe/GemDxe.inf
+
+  #
   # NVMe boot devices
   #
   INF MdeModulePkg/Bus/Pci/NvmExpressDxe/NvmExpressDxe.inf

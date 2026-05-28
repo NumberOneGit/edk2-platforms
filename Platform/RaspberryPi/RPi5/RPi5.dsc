@@ -691,6 +691,11 @@
   Silicon/RaspberryPi/RpiSiliconPkg/Drivers/Rp1BusDxe/Rp1BusDxe.inf
 
   #
+  # GEM Ethernet (RP1)
+  #
+  Silicon/RaspberryPi/RpiSiliconPkg/Drivers/GemDxe/GemDxe.inf
+
+  #
   # NVMe boot devices
   #
   MdeModulePkg/Bus/Pci/NvmExpressDxe/NvmExpressDxe.inf

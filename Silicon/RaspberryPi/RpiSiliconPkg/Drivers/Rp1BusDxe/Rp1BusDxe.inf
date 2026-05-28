@@ -25,9 +25,11 @@
 
 [LibraryClasses]
   DebugLib
+  DxeServicesTableLib
   IoLib
   MemoryAllocationLib
   NonDiscoverableDeviceRegistrationLib
+  TimerLib
   UefiBootServicesTableLib
   UefiDriverEntryPoint
   UefiLib
