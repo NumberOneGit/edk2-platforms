@@ -14,6 +14,7 @@
 #include <Library/AcpiLib.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/BoardInfoLib.h>
 #include <Library/BoardRevisionHelperLib.h>
 #include <Library/DebugLib.h>
 #include <Library/DxeServicesTableLib.h>
@@ -806,6 +807,16 @@ InstallAcpiTables (
     "URTI",
     (PcdGet8 (PcdBcm2712Stepping) == BCM2712_STEPPING_C1) ? 153 : 152
     );
+
+  {
+    USB_DR_MODE Mode = BoardInfoGetUsbDrMode ();
+    AcpiUpdateSdtNameInteger (
+      mDsdtTable,
+      "USBE",
+      ((Mode == UsbDrModeHost) || (Mode == UsbDrModeOtg)) ? 1 : 0
+      );
+  }
+
   AcpiUpdateChecksum ((UINT8 *)mDsdtTable, mDsdtTable->Length);
 
   mAcpiSdtProtocol->Close (TableHandle);

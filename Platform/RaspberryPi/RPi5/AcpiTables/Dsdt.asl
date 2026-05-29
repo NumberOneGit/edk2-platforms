@@ -113,6 +113,35 @@ DefinitionBlock ("Dsdt.aml", "DSDT", 2, "RPIFDN", "RPI5    ", 2)
       }
 
       //
+      // BCM2712 internal DWC2 USB OTG controller.
+      // Hidden by default; ConfigTable.c flips USBE based on dr_mode from FDT.
+      //
+      Device (USB0) {
+        Name (_HID, "BCM2848")
+        Name (_CID, "DWC_OTG")
+        Name (_UID, 0x0)
+        Name (_CCA, 0x0)
+        Name (USBE, 0)
+        Method (_STA) { Return (USBE ? 0xf : 0x0) }
+
+        Method (_CRS, 0x0, Serialized) {
+          Name (RBUF, ResourceTemplate () {
+            QWORDMEMORY_BUF (00, ResourceConsumer)
+            Interrupt (ResourceConsumer, Level, ActiveHigh, Exclusive) { 105 }
+          })
+          QWORD_SET (00, 0x100048000, 0x10000, 0)
+          Return (RBUF)
+        }
+
+        Name (_DSD, Package () {
+          ToUUID ("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
+          Package () {
+            Package () { "dr_mode", "host" }
+          }
+        })
+      }
+
+      //
       // Multifunction serial bus device to support Bluetooth function.
       //
       Device (BTH0) {
