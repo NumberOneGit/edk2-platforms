@@ -76,7 +76,7 @@ DefinitionBlock ("Dsdt.aml", "DSDT", 2, "RPIFDN", "RPI5    ", 2)
           ReadWrite,
           0x0,
           0x00000000C0000000, // MIN
-          0x00000000FFFFFFFF, // MAX
+          0x0FFFFFFFF, // MAX
           0xFFFFFFFF40000000, // TRA
           0x0000000040000000, // LEN
           ,
@@ -105,6 +105,78 @@ DefinitionBlock ("Dsdt.aml", "DSDT", 2, "RPIFDN", "RPI5    ", 2)
           ToUUID ("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
           Package () {
             Package () { "clock-frequency", PL011_DEBUG_CLOCK_FREQUENCY }
+          }
+        })
+      }
+
+      //
+      // Multifunction serial bus device to support Bluetooth function.
+      //
+      Device (BTH0) {
+        Name (_HID, "BCM2EA6")
+        Name (_CID, "BCM2EA6")
+
+        Method (_STA) {
+          Return (0xf)
+        }
+
+        Method (_CRS, 0x0, Serialized) {
+          Name (RBUF, ResourceTemplate () {
+            UARTSerialBus(
+              115200,        // InitialBaudRate: in BPS
+              ,              // BitsPerByte: default to 8 bits
+              ,              // StopBits: Defaults to one bit
+              0xC0,          // LinesInUse: RTS (0x80) and CTS (0x40)
+                            //   declare enabled control lines.
+                            //   Optional bits:
+                            //   - Bit 7 (0x80) Request To Send (RTS)
+                            //   - Bit 6 (0x40) Clear To Send (CTS)
+                            //   - Bit 5 (0x20) Data Terminal Ready (DTR)
+                            //   - Bit 4 (0x10) Data Set Ready (DSR)
+                            //   - Bit 3 (0x08) Ring Indicator (RI)
+                            //   - Bit 2 (0x04) Data Carrier Detect (DTD)
+                            //   - Bit 1 (0x02) Reserved. Must be 0.
+                            //   - Bit 0 (0x01) Reserved. Must be 0.
+              ,              // IsBigEndian:
+                            //   default to LittleEndian.
+              ,              // Parity: Defaults to no parity
+              FlowControlHardware, // FlowControl: RTS/CTS hardware flow control.
+              32,            // ReceiveBufferSize (BCM2712 FIFO depth)
+              32,            // TransmitBufferSize (BCM2712 FIFO depth)
+              "\\_SB.SOCB.URT1", // ResourceSource:
+                            //   UART bus controller name
+              ,              // ResourceSourceIndex: assumed to be 0
+              ,              // ResourceUsage: assumed to be
+                            //   ResourceConsumer
+              UARM,          // DescriptorName: creates name
+                            //   for offset of resource descriptor
+            )                // Vendor data
+          })
+          Return (RBUF)
+        }
+      }
+
+      //
+      // BT UART Port
+      //
+      Device (URT1) {
+        Name (_HID, "BTU2712")
+        Name (_UID, 0x0)
+        Name (_CCA, 0x0)
+
+        Method (_CRS, 0x0, Serialized) {
+          Name (RBUF, ResourceTemplate () {
+            QWORDMEMORY_BUF (00, ResourceConsumer)
+            Interrupt (ResourceConsumer, Level, ActiveHigh, Exclusive) { BT_UART_INTERRUPT }
+          })
+          QWORD_SET (00, BT_UART_BASE_ADDRESS, BT_UART_LENGTH, 0)
+          Return (RBUF)
+        }
+
+        Name (_DSD, Package () {
+          ToUUID ("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
+          Package () {
+            Package () { "clock-frequency", BT_UART_CLOCK_FREQUENCY }
           }
         })
       }
@@ -200,6 +272,170 @@ DefinitionBlock ("Dsdt.aml", "DSDT", 2, "RPIFDN", "RPI5    ", 2)
           Return (0x0)
         }
         Return (0xF)
+      }
+
+     //
+      // RP1 Fan PWM Helper
+      //
+      Device (FHLP)
+      {
+            Name (_HID, "ACPI0004")
+            Name (_UID, 0x10)
+
+            Method (_STA, 0, NotSerialized)
+            {
+                  Return (0x0F)
+            }
+
+            OperationRegion (PWMR, SystemMemory,
+                  \_SB.RP1B.PBAR + RP1_PWM1_BASE,
+                  RP1_PWM1_SIZE)
+
+            Field (PWMR, DWordAcc, NoLock, Preserve)
+            {
+                  Offset (0x000),
+                  GCTL, 32,
+
+                  Offset (0x044),
+                  CTL3, 32,
+
+                  Offset (0x048),
+                  RAN3, 32,
+
+                  Offset (0x050),
+                  DUT3, 32
+            }
+
+            //
+            // 0 = off
+            // 1 = low
+            // 2 = medium
+            // 3 = full
+            //
+            Method (FSET, 1, Serialized)
+            {
+                  Store (20000, RAN3)
+                  Store (0x00000101, CTL3)
+
+                  If (Arg0 == 0)
+                  {
+                        Store (20000, DUT3)
+                  }
+                  ElseIf (Arg0 == 1)
+                  {
+                        Store (15000, DUT3)
+                  }
+                  ElseIf (Arg0 == 2)
+                  {
+                        Store (10000, DUT3)
+                  }
+                  Else
+                  {
+                        Store (0, DUT3)
+                  }
+
+                  //
+                  // Enable/update PWM CH3
+                  //
+                  Store (Or (GCTL, 0x00000008), GCTL)
+                  Store (Or (GCTL, 0x80000008), GCTL)
+            }
+      }
+
+      //
+      // Logical ACPI1 cooling devices
+      //
+
+      Device (FAN0)
+      {
+            Name (_HID, EISAID ("PNP0C0B"))
+            Name (_UID, 0x0)
+
+            Method (_STA, 0, NotSerialized)
+            {
+                  Return (0x0F)
+            }
+
+            //
+            // D0 = coolest/off
+            //
+            Method (_PS0, 0, Serialized)
+            {
+                  \_SB.RP1B.FHLP.FSET (0)
+            }
+
+            Method (_PS3, 0, Serialized)
+            {
+            }
+      }
+
+      Device (FAN1)
+      {
+            Name (_HID, EISAID ("PNP0C0B"))
+            Name (_UID, 0x1)
+
+            Method (_STA, 0, NotSerialized)
+            {
+                  Return (0x0F)
+            }
+
+            //
+            // D0 = low
+            //
+            Method (_PS0, 0, Serialized)
+            {
+                  \_SB.RP1B.FHLP.FSET (1)
+            }
+
+            Method (_PS3, 0, Serialized)
+            {
+            }
+      }
+
+      Device (FAN2)
+      {
+            Name (_HID, EISAID ("PNP0C0B"))
+            Name (_UID, 0x2)
+
+            Method (_STA, 0, NotSerialized)
+            {
+                  Return (0x0F)
+            }
+
+            //
+            // D0 = medium
+            //
+            Method (_PS0, 0, Serialized)
+            {
+                  \_SB.RP1B.FHLP.FSET (2)
+            }
+
+            Method (_PS3, 0, Serialized)
+            {
+            }
+      }
+
+      Device (FAN3)
+      {
+            Name (_HID, EISAID ("PNP0C0B"))
+            Name (_UID, 0x3)
+
+            Method (_STA, 0, NotSerialized)
+            {
+                  Return (0x0F)
+            }
+
+            //
+            // D0 = full speed
+            //
+            Method (_PS0, 0, Serialized)
+            {
+                  \_SB.RP1B.FHLP.FSET (3)
+            }
+
+            Method (_PS3, 0, Serialized)
+            {
+            }
       }
 
       Include ("Rp1.asi")
@@ -442,6 +678,64 @@ DefinitionBlock ("Dsdt.aml", "DSDT", 2, "RPIFDN", "RPI5    ", 2)
         }
       }
     } // Device (SDC1)
+
+
+    
+    //
+    // Thermal Zone for CPU temperature monitoring
+    //
+    Device (EC00) {
+      Name (_HID, EISAID ("PNP0C06"))
+      Name (_CCA, 0x0)
+
+      ThermalZone (TZ00) {
+        // AVS thermal sensor region
+        OperationRegion (TEMS, SystemMemory, BCM2712_AVS_BASE, 0x8)
+        Field (TEMS, DWordAcc, NoLock, Preserve) {
+          TMPS, 32
+        }
+
+        // Temperature reading method (returns temperature in deci-Kelvin)
+        Method (_TMP, 0, Serialized) {
+          // Extract temperature data (bits 9:0) - same as Linux driver
+          // Apply BCM2712 coefficients: slope = -550, offset = 450000
+          // Formula: ((450000 - (raw * 550)) / 100) + 2732
+          Return (((450000 - ((TMPS & 0x3ff) * 550)) / 100) + 2732)
+        }
+
+        // Receive cooling policy from OS
+        Method (_SCP, 3) { }
+
+        // Critical temperature (110°C = 3832)
+        Method (_CRT) { Return (3832) }
+
+        // HOT state (85°C = 3582) - OS should hibernate
+        Method (_HOT) { Return (3582) }
+
+        // Passive cooling (80°C = 3532) - CPU throttling trip point
+        Method (_PSV) { Return (3532) }
+
+        // Active cooling trip points.
+        // ACPI convention: _AC0 is hottest/highest cooling, then _AC1, _AC2, etc.
+        Method (_AC0) { Return (3532) }  // 80°C - Full speed
+        Method (_AC1) { Return (3432) }  // 70°C - Medium speed
+        Method (_AC2) { Return (3332) }  // 60°C - Low speed
+        Method (_AC3) { Return (3232) }  // 50°C - Off / coolest active level
+
+        // Active cooling device lists.
+        // Windows should power the listed fan device through its _PR0 resource.
+        Method (_AL0) { Return (Package () { \_SB.RP1B.FAN3 }) }
+        Method (_AL1) { Return (Package () { \_SB.RP1B.FAN2 }) }
+        Method (_AL2) { Return (Package () { \_SB.RP1B.FAN1 }) }
+        Method (_AL3) { Return (Package () { \_SB.RP1B.FAN0 }) }
+
+        // Thermal zone polling period (in deciseconds)
+        Name (_TZP, 10)  // 1 second
+
+        // Passive cooling devices (CPU cores)
+        Name (_PSL, Package () { \_SB.CPU0, \_SB.CPU1, \_SB.CPU2, \_SB.CPU3 })
+      }
+    }
 
   } // Scope (\_SB_)
 } // DefinitionBlock

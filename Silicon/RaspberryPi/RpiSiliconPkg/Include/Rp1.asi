@@ -58,3 +58,35 @@ Device (XHC1) {
     Return (RBUF)
   }
 }
+
+Device (GEM0) {
+  Name (_HID, "GEM0001")
+  Name (_UID, 0x0)
+
+  // Parent RP1 bus is non-coherent.
+  Name (_CCA, 0x0)
+
+  Method (_CRS, 0, Serialized) {
+    Name (RBUF, ResourceTemplate () {
+      RP1_QWORDMEMORY_BUF (00)
+    })
+    RP1_QWORDMEMORY_SET (00, RP1_ETH_BASE, 0x4000)
+    Return (RBUF)
+  }
+
+  Name (_DMA, ResourceTemplate () {
+    //
+    // Keep RP1 GEM DMA in the same conservative bottom-3GB window used by
+    // NonCoherentIoMmuDxe. RP1 ETH interrupt routing is not described here;
+    // the initial Windows driver should poll until RP1 MIP/MSI-X is modeled.
+    //
+    QWordMemory (ResourceProducer,,
+      MinFixed, MaxFixed, NonCacheable, ReadWrite,
+      0x0,
+      0x00000000,       // MIN
+      0xBFFFFFFF,       // MAX
+      0x00000000,       // TRA
+      0xC0000000        // LEN
+    )
+  })
+}

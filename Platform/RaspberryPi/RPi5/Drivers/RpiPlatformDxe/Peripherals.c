@@ -76,26 +76,52 @@ InitGpioPinctrls (
   )
 {
   //
-  // Wi-Fi SDIO bus (pins 30-35). Logical-function dispatch hides the C1 vs
-  // D0 alt-value divergence; routing data lives in
-  // Bcm2712LogicalFunctions.c. Pull settings are not stepping-dependent and
-  // stay inline.
+  // Wi-Fi bring-up. Skipped entirely when PcdBoardHasWifi is FALSE so a
+  // no-wifi CM5 / CM5L doesn't waste time programming SDIO2 pinmux or the
+  // wl_on_reg for hardware that isn't populated. The paired DSDT SDC1
+  // device is gated via an SSDT install in ConfigTable.c.
   //
-  GpioApplyFunc ("sd2_clk");
-  GpioSetPull (BCM2712_GIO, 30, BCM2712_GPIO_PIN_PULL_NONE);
-  GpioApplyFunc ("sd2_cmd");
-  GpioSetPull (BCM2712_GIO, 31, BCM2712_GPIO_PIN_PULL_UP);
-  GpioApplyFunc ("sd2_dat0");
-  GpioSetPull (BCM2712_GIO, 32, BCM2712_GPIO_PIN_PULL_UP);
-  GpioApplyFunc ("sd2_dat1");
-  GpioSetPull (BCM2712_GIO, 33, BCM2712_GPIO_PIN_PULL_UP);
-  GpioApplyFunc ("sd2_dat2");
-  GpioSetPull (BCM2712_GIO, 34, BCM2712_GPIO_PIN_PULL_UP);
-  GpioApplyFunc ("sd2_dat3");
-  GpioSetPull (BCM2712_GIO, 35, BCM2712_GPIO_PIN_PULL_UP);
+  if (PcdGetBool (PcdBoardHasWifi)) {
+    //
+    // SDIO bus to wifi controller, pins 30-35. Logical-function dispatch
+    // hides the C1 vs D0 alt-value divergence; routing data lives in
+    // Bcm2712LogicalFunctions.c. Pull settings are not stepping-dependent
+    // and stay inline.
+    //
+    GpioApplyFunc ("sd2_clk");
+    GpioSetPull (BCM2712_GIO, 30, BCM2712_GPIO_PIN_PULL_NONE);
+    GpioApplyFunc ("sd2_cmd");
+    GpioSetPull (BCM2712_GIO, 31, BCM2712_GPIO_PIN_PULL_UP);
+    GpioApplyFunc ("sd2_dat0");
+    GpioSetPull (BCM2712_GIO, 32, BCM2712_GPIO_PIN_PULL_UP);
+    GpioApplyFunc ("sd2_dat1");
+    GpioSetPull (BCM2712_GIO, 33, BCM2712_GPIO_PIN_PULL_UP);
+    GpioApplyFunc ("sd2_dat2");
+    GpioSetPull (BCM2712_GIO, 34, BCM2712_GPIO_PIN_PULL_UP);
+    GpioApplyFunc ("sd2_dat3");
+    GpioSetPull (BCM2712_GIO, 35, BCM2712_GPIO_PIN_PULL_UP);
 
-  // wl_on_reg - consistent across all models
-  GpioWrite (BCM2712_GIO, 28, TRUE);
+    // wl_on_reg
+    GpioWrite (BCM2712_GIO, 28, TRUE);
+
+    //
+    // CM5 / CM5 Lite antenna select GPIOs. AON pin 5 (ANT1) and pin 6
+    // (ANT2) in generic GPIO mode (alt 0). Defaults match the
+    // bcm2712-rpi-cm5.dtsi hogs: internal antenna ON, external OFF.
+    //
+    // wifi_ant1 / wifi_ant2 only have D0Cm5 routes in the logical-function
+    // table, so the resolver returns EFI_UNSUPPORTED on Pi 5B / Pi 500 and
+    // the direction/write below are skipped silently.
+    //
+    if (GpioApplyFunc ("wifi_ant1") == EFI_SUCCESS) {
+      GpioSetDirection (BCM2712_GIO_AON, 5, BCM2712_GPIO_PIN_OUTPUT);
+      GpioWrite        (BCM2712_GIO_AON, 5, TRUE);
+    }
+    if (GpioApplyFunc ("wifi_ant2") == EFI_SUCCESS) {
+      GpioSetDirection (BCM2712_GIO_AON, 6, BCM2712_GPIO_PIN_OUTPUT);
+      GpioWrite        (BCM2712_GIO_AON, 6, FALSE);
+    }
+  }
 
   //
   // Per-board configuration: SD card detect on Pi 5B / Pi 500, NoCD plus
@@ -112,12 +138,31 @@ InitGpioPinctrls (
       GpioSetPull (BCM2712_GIO_AON, 5, BCM2712_GPIO_PIN_PULL_UP);
       break;
 
-    case 0x18: // CM5: SDIO1 wired to on-module eMMC at fixed signaling
+    case 0x18: // CM5: SDIO1 wired to on-module eMMC, 8-bit mode
       mSdController.IsSlotRemovable = FALSE;
       mSdController.NoCD = TRUE;
+      //
+      // eMMC pad pulls per the Linux DT defaults. The VPU/start.elf has
+      // already programmed the mux for these pins (otherwise eMMC boot
+      // would never have reached UEFI), but pad pulls aren't guaranteed
+      // to match what the eMMC datasheet recommends - so re-assert them
+      // here. CMD and DAT0..7 want pull-up; DS (data strobe) wants pull-
+      // down so it parks low when the controller isn't driving it. CM5
+      // only; CM5 Lite has no on-module eMMC.
+      //
+      GpioSetPull (BCM2712_GIO, 36, BCM2712_GPIO_PIN_PULL_UP);    // CMD
+      GpioSetPull (BCM2712_GIO, 37, BCM2712_GPIO_PIN_PULL_DOWN);  // DS
+      GpioSetPull (BCM2712_GIO, 39, BCM2712_GPIO_PIN_PULL_UP);    // DAT0
+      GpioSetPull (BCM2712_GIO, 40, BCM2712_GPIO_PIN_PULL_UP);    // DAT1
+      GpioSetPull (BCM2712_GIO, 41, BCM2712_GPIO_PIN_PULL_UP);    // DAT2
+      GpioSetPull (BCM2712_GIO, 42, BCM2712_GPIO_PIN_PULL_UP);    // DAT3
+      GpioSetPull (BCM2712_GIO, 43, BCM2712_GPIO_PIN_PULL_UP);    // DAT4
+      GpioSetPull (BCM2712_GIO, 44, BCM2712_GPIO_PIN_PULL_UP);    // DAT5
+      GpioSetPull (BCM2712_GIO, 45, BCM2712_GPIO_PIN_PULL_UP);    // DAT6
+      GpioSetPull (BCM2712_GIO, 46, BCM2712_GPIO_PIN_PULL_UP);    // DAT7
       break;
 
-    case 0x1a: // CM5 Lite
+    case 0x1a: // CM5 Lite: SD card on carrier with no card-detect signal
       mSdController.NoCD = TRUE;
       break;
   }
