@@ -91,13 +91,16 @@ DefinitionBlock ("Dsdt.aml", "DSDT", 2, "RPIFDN", "RPI5    ", 2)
         Name (_HID, "ARMH0011")
         Name (_UID, 0x0)
         Name (_CCA, 0x0)
+        Name (URTI, PL011_DEBUG_INTERRUPT)
 
         Method (_CRS, 0x0, Serialized) {
           Name (RBUF, ResourceTemplate () {
             QWORDMEMORY_BUF (00, ResourceConsumer)
-            Interrupt (ResourceConsumer, Level, ActiveHigh, Exclusive) { PL011_DEBUG_INTERRUPT }
+            Interrupt (ResourceConsumer, Level, ActiveHigh, Exclusive, , , INTV) { 0 }
           })
           QWORD_SET (00, PL011_DEBUG_BASE_ADDRESS, PL011_DEBUG_LENGTH, 0)
+          CreateDWordField (RBUF, INTV._INT, IRQ0)
+          Store (URTI, IRQ0)
           Return (RBUF)
         }
 

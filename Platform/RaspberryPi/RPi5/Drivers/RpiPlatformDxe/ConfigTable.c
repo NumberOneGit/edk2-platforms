@@ -801,6 +801,13 @@ InstallAcpiTables (
   DsdtFixupRp1 (mAcpiSdtProtocol, TableHandle);
   DsdtFixupPcie (mAcpiSdtProtocol, TableHandle);
 
+  AcpiUpdateSdtNameInteger (
+    mDsdtTable,
+    "URTI",
+    (PcdGet8 (PcdBcm2712Stepping) == BCM2712_STEPPING_C1) ? 153 : 152
+    );
+  AcpiUpdateChecksum ((UINT8 *)mDsdtTable, mDsdtTable->Length);
+
   mAcpiSdtProtocol->Close (TableHandle);
 
   AcpiFixupSpcrInterrupt (mAcpiSdtProtocol);
