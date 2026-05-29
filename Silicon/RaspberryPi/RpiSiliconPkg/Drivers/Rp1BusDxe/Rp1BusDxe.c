@@ -24,13 +24,6 @@
 
 #include "Rp1BusDxe.h"
 
-#define RP1_FAN_PWM_GPIO      45
-#define RP1_FAN_PWM_FUNCTION  Rp1GpioFunctionAlt0
-#define RP1_FAN_PWM_CHANNEL   3
-#define RP1_FAN_PWM_RANGE     2000
-#define RP1_FAN_PWM_DUTY      500
-#define RP1_FAN_PWM_INVERTED  TRUE
-
 STATIC
 VOID EFIAPI Rp1BusRegisterDwc3Controllers(IN RP1_BUS_DATA *Rp1Data) {
   EFI_STATUS Status;
@@ -148,98 +141,6 @@ Rp1BusDmaFreeBuffer(IN RP1_BUS_PROTOCOL *This, IN UINTN Pages,
   return Rp1Data->PciIo->FreeBuffer(Rp1Data->PciIo, Pages, HostAddress);
 }
 
-STATIC
-EFI_STATUS
-EFIAPI
-Rp1BusConfigureFanPrereqs (
-  IN RP1_BUS_DATA  *Rp1Data
-  )
-{
-  RP1_GPIO_PIN  FanPin;
-  UINT32        Ctrl;
-  EFI_STATUS    Status;
-
-  Status = Rp1GpioGetPin (Rp1Data->PeripheralBase, RP1_FAN_PWM_GPIO, &FanPin);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "RP1: Failed to resolve fan GPIO. Status=%r\n", Status));
-    return Status;
-  }
-
-  Rp1ClockWrite32 (
-    Rp1Data->PeripheralBase + RP1_CLOCKS_MAIN_BASE,
-    RP1_CLK_BLOCK_PWM1,
-    RP1_CLK_REG_DIV_INT,
-    1
-    );
-  Rp1ClockWrite32 (
-    Rp1Data->PeripheralBase + RP1_CLOCKS_MAIN_BASE,
-    RP1_CLK_BLOCK_PWM1,
-    RP1_CLK_FRAC_REG_DIV_FRAC,
-    0
-    );
-
-  Ctrl = Rp1ClockRead32 (
-           Rp1Data->PeripheralBase + RP1_CLOCKS_MAIN_BASE,
-           RP1_CLK_BLOCK_PWM1,
-           RP1_CLK_REG_CTRL
-           );
-  Ctrl = Rp1ClockSetField (
-           Ctrl,
-           RP1_CLK_CTRL_AUXSRC_MASK,
-           RP1_CLK_CTRL_AUXSRC_OFFSET,
-           2
-           );
-  Ctrl |= RP1_CLK_CTRL_ENABLE;
-  Rp1ClockWrite32 (
-    Rp1Data->PeripheralBase + RP1_CLOCKS_MAIN_BASE,
-    RP1_CLK_BLOCK_PWM1,
-    RP1_CLK_REG_CTRL,
-    Ctrl
-    );
-
-  Rp1GpioSetFunction (&FanPin, RP1_FAN_PWM_FUNCTION);
-
-  Ctrl = Rp1GpioReadCtrl (&FanPin);
-  Ctrl = Rp1GpioSetField (
-           Ctrl,
-           RP1_GPIO_CTRL_OUTOVER_MASK,
-           RP1_GPIO_CTRL_OUTOVER_OFFSET,
-           RP1_GPIO_OUTOVER_PERI
-           );
-  Ctrl = Rp1GpioSetField (
-           Ctrl,
-           RP1_GPIO_CTRL_OEOVER_MASK,
-           RP1_GPIO_CTRL_OEOVER_OFFSET,
-           RP1_GPIO_OEOVER_PERI
-           );
-  Ctrl = Rp1GpioSetField (
-           Ctrl,
-           RP1_GPIO_CTRL_INOVER_MASK,
-           RP1_GPIO_CTRL_INOVER_OFFSET,
-           RP1_GPIO_INOVER_PERI
-           );
-  Rp1GpioWriteCtrl (&FanPin, Ctrl);
-
-  return EFI_SUCCESS;
-}
-
-STATIC
-EFI_STATUS
-EFIAPI
-Rp1BusConfigurePwm1Ch3 (
-  IN RP1_BUS_DATA  *Rp1Data
-  )
-{
-  return Rp1PwmConfigure (
-           Rp1Data->PeripheralBase + RP1_PWM1_BASE,
-           RP1_FAN_PWM_CHANNEL,
-           RP1_FAN_PWM_RANGE,
-           RP1_FAN_PWM_DUTY,
-           RP1_FAN_PWM_INVERTED,
-           TRUE
-           );
-}
-
 EFI_STATUS
 EFIAPI
 Rp1BusDriverBindingSupported(IN EFI_DRIVER_BINDING_PROTOCOL *This,
@@ -355,16 +256,6 @@ Rp1BusDriverBindingStart(IN EFI_DRIVER_BINDING_PROTOCOL *This,
 
   Rp1BusRegisterDevices(Rp1Data);
   Rp1BusEnableInterrupts(Rp1Data);
-
-  Status = Rp1BusConfigureFanPrereqs (Rp1Data);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "RP1: Failed to configure fan prerequisites. Status=%r\n", Status));
-  }
-
-  Status = Rp1BusConfigurePwm1Ch3 (Rp1Data);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "RP1: Failed to configure PWM1 channel 3. Status=%r\n", Status));
-  }
 
   return EFI_SUCCESS;
 

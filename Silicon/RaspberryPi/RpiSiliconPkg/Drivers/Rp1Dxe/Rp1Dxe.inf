@@ -1,0 +1,35 @@
+#/** @file
+#
+#  RP1 device init driver - fan + future MMIO inits.
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+#**/
+
+[Defines]
+  INF_VERSION                    = 0x0001001A
+  BASE_NAME                      = Rp1Dxe
+  FILE_GUID                      = a3f6427d-2c5b-4f8a-9c40-d92e7b3a6f1b
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = Rp1DxeEntryPoint
+
+[Sources]
+  Rp1Dxe.c
+  Rp1Dxe.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  Silicon/RaspberryPi/RpiSiliconPkg/RpiSiliconPkg.dec
+
+[LibraryClasses]
+  DebugLib
+  IoLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+
+[Protocols]
+  gRp1BusProtocolGuid                           ## CONSUMES
+
+[Depex]
+  gRp1BusProtocolGuid

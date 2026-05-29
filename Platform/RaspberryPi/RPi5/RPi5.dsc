@@ -691,6 +691,11 @@
   Silicon/RaspberryPi/RpiSiliconPkg/Drivers/Rp1BusDxe/Rp1BusDxe.inf
 
   #
+  # RP1 device init (fan PWM, future MMIO inits)
+  #
+  Silicon/RaspberryPi/RpiSiliconPkg/Drivers/Rp1Dxe/Rp1Dxe.inf
+
+  #
   # GEM Ethernet (RP1)
   #
   Silicon/RaspberryPi/RpiSiliconPkg/Drivers/GemDxe/GemDxe.inf
