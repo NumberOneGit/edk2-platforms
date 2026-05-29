@@ -148,6 +148,17 @@ RpiPlatformDxeEntryPoint (
   DEBUG ((DEBUG_INFO, "RpiBoardId: PcdBoardHasWifi (default until OTP wired) = %a\n",
           PcdGetBool (PcdBoardHasWifi) ? "TRUE" : "FALSE"));
 
+  {
+    CONST CHAR8 *DrModeStr;
+    switch (BoardInfoGetUsbDrMode ()) {
+      case UsbDrModeHost:       DrModeStr = "host";       break;
+      case UsbDrModePeripheral: DrModeStr = "peripheral"; break;
+      case UsbDrModeOtg:        DrModeStr = "otg";        break;
+      default:                  DrModeStr = "unset";      break;
+    }
+    DEBUG ((DEBUG_INFO, "RpiBoardId: UsbDrMode = %a\n", DrModeStr));
+  }
+
   mSystemMemorySize = BoardRevisionGetMemorySize (mBoardRevisionCode);
 
   SetupVariables ();

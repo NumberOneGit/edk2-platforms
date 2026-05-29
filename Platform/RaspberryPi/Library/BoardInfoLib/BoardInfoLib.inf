@@ -23,5 +23,6 @@
   Platform/RaspberryPi/RaspberryPi.dec
 
 [LibraryClasses]
+  BaseLib
   FdtPlatformLib
   FdtLib
