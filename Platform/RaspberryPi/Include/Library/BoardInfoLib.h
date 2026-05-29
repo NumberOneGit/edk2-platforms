@@ -16,6 +16,16 @@ typedef enum {
   UsbDrModeOtg
 } USB_DR_MODE;
 
+#define USB_GADGET_MAX_TX_FIFOS  15
+
+typedef struct {
+  UINT32   RxFifoSize;
+  UINT32   NpTxFifoSize;
+  UINTN    TxFifoCount;
+  UINT32   TxFifoSize[USB_GADGET_MAX_TX_FIFOS];
+  BOOLEAN  DisableOverCurrent;
+} USB_GADGET_FIFO_CONFIG;
+
 EFI_STATUS
 EFIAPI
 BoardInfoGetRevisionCode (
@@ -32,6 +42,12 @@ USB_DR_MODE
 EFIAPI
 BoardInfoGetUsbDrMode (
   VOID
+  );
+
+VOID
+EFIAPI
+BoardInfoGetUsbGadgetFifo (
+  OUT USB_GADGET_FIFO_CONFIG  *Config
   );
 
 #endif /* __BOARD_INFO_LIB_H__ */

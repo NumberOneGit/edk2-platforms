@@ -8,6 +8,7 @@
 
 #include <Uefi.h>
 #include <Library/BaseLib.h>
+#include <Library/BaseMemoryLib.h>
 #include <Library/BoardInfoLib.h>
 #include <Library/FdtPlatformLib.h>
 #include <Library/FdtLib.h>
@@ -114,4 +115,68 @@ BoardInfoGetUsbDrMode (
   }
 
   return UsbDrModeUnset;
+}
+
+VOID
+EFIAPI
+BoardInfoGetUsbGadgetFifo (
+  OUT USB_GADGET_FIFO_CONFIG  *Config
+  )
+{
+  VOID          *Fdt;
+  INT32          Node;
+  CONST VOID    *Property;
+  INT32          Length;
+  UINTN          Idx;
+  CONST UINT32  *Array;
+
+  ZeroMem (Config, sizeof (*Config));
+
+  Fdt = FdtPlatformGetBase ();
+  if (Fdt == NULL) {
+    return;
+  }
+
+  for (Node = FdtNextNode (Fdt, -1, NULL);
+       Node >= 0;
+       Node = FdtNextNode (Fdt, Node, NULL)) {
+
+    Property = FdtGetProp (Fdt, Node, "g-rx-fifo-size", &Length);
+    if ((Property == NULL) || (Length != sizeof (UINT32))) {
+      Property = FdtGetProp (Fdt, Node, "g-np-tx-fifo-size", &Length);
+      if (Property == NULL) {
+        Property = FdtGetProp (Fdt, Node, "g-tx-fifo-size", &Length);
+        if (Property == NULL) {
+          continue;
+        }
+      }
+    }
+
+    Property = FdtGetProp (Fdt, Node, "g-rx-fifo-size", &Length);
+    if ((Property != NULL) && (Length == sizeof (UINT32))) {
+      Config->RxFifoSize = Fdt32ToCpu (*(CONST UINT32 *)Property);
+    }
+
+    Property = FdtGetProp (Fdt, Node, "g-np-tx-fifo-size", &Length);
+    if ((Property != NULL) && (Length == sizeof (UINT32))) {
+      Config->NpTxFifoSize = Fdt32ToCpu (*(CONST UINT32 *)Property);
+    }
+
+    Property = FdtGetProp (Fdt, Node, "g-tx-fifo-size", &Length);
+    if ((Property != NULL) && (Length > 0) && ((Length % sizeof (UINT32)) == 0)) {
+      Config->TxFifoCount = Length / sizeof (UINT32);
+      if (Config->TxFifoCount > USB_GADGET_MAX_TX_FIFOS) {
+        Config->TxFifoCount = USB_GADGET_MAX_TX_FIFOS;
+      }
+      Array = (CONST UINT32 *)Property;
+      for (Idx = 0; Idx < Config->TxFifoCount; Idx++) {
+        Config->TxFifoSize[Idx] = Fdt32ToCpu (Array[Idx]);
+      }
+    }
+
+    Property = FdtGetProp (Fdt, Node, "disable-over-current", &Length);
+    Config->DisableOverCurrent = (Property != NULL);
+
+    return;
+  }
 }

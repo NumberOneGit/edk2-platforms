@@ -24,5 +24,6 @@
 
 [LibraryClasses]
   BaseLib
+  BaseMemoryLib
   FdtPlatformLib
   FdtLib

@@ -1,0 +1,33 @@
+#/** @file
+#
+#  BCM2712 DWC2 USB gadget controller driver (Pi 5 fork).
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+#**/
+
+[Defines]
+  INF_VERSION                    = 0x0001001A
+  BASE_NAME                      = DwUsbGadgetDxe
+  FILE_GUID                      = e2f4801c-c5b7-4a90-8d24-3c5b6f7e9a1b
+  MODULE_TYPE                    = UEFI_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = DwUsbGadgetEntryPoint
+
+[Sources]
+  DwUsbGadgetDxe.c
+  DwUsbGadgetDxe.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  Platform/RaspberryPi/RaspberryPi.dec
+
+[LibraryClasses]
+  BaseLib
+  BoardInfoLib
+  DebugLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+
+[Depex]
+  TRUE
